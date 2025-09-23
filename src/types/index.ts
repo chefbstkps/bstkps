@@ -177,3 +177,85 @@ export interface BrandStats {
   total_categories: number
   total_models: number
 }
+
+// Storingen (Faults) types
+export interface Storing {
+  id: string
+  storingnummer: string
+  soort_storing: 'Radio' | 'Telefonie' | 'Waarschuwingsapparatuur'
+  telefonie_type?: 'Glasvezel' | 'Koper'
+  waarschuwingsapparatuur_type?: 'Zwaailicht' | 'Sirene'
+  betrokken_afdeling: string
+  adres: string
+  locatie: 'Gebouw' | 'Voertuig' | 'Anders'
+  aard_storing: string
+  naam_contactpersoon: string
+  telefoonnummer_contactpersoon: string
+  aansluitnummer?: string
+  telefoonnummer_storing?: string
+  datum_storing_binnengekomen: string
+  datum_storing_begonnen: string
+  handeling: 'Zelf afhandelen' | 'Verwezen naar Telesur'
+  telesur_ticketnummer?: string
+  datum_verwezen?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface StoringFeedback {
+  id: string
+  storing_id: string
+  is_afgehandeld: boolean
+  datum_afgehandeld?: string
+  afgehandeld_door?: string
+  hoe_afgehandeld?: string
+  gebruikte_materialen?: string
+  opmerkingen?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface StoringFormData {
+  storingnummer: string
+  soort_storing: 'Radio' | 'Telefonie' | 'Waarschuwingsapparatuur'
+  telefonie_type?: 'Glasvezel' | 'Koper'
+  waarschuwingsapparatuur_type?: 'Zwaailicht' | 'Sirene'
+  betrokken_afdeling: string
+  adres: string
+  locatie: 'Gebouw' | 'Voertuig' | 'Anders'
+  aard_storing: string
+  naam_contactpersoon: string
+  telefoonnummer_contactpersoon: string
+  aansluitnummer?: string
+  telefoonnummer_storing?: string
+  datum_storing_binnengekomen: string
+  datum_storing_begonnen: string
+  handeling: 'Zelf afhandelen' | 'Verwezen naar Telesur'
+  telesur_ticketnummer?: string
+  datum_verwezen?: string
+}
+
+export interface StoringFeedbackFormData {
+  is_afgehandeld: boolean
+  datum_afgehandeld?: string
+  afgehandeld_door?: string
+  hoe_afgehandeld?: string
+  gebruikte_materialen?: string
+  opmerkingen?: string
+}
+
+export interface StoringWithFeedback extends Storing {
+  feedback: StoringFeedback[]
+}
+
+// Stats for storingen
+export interface StoringStats {
+  total_storingen: number
+  open_storingen: number
+  afgehandelde_storingen: number
+  storingen_per_soort: {
+    radio: number
+    telefonie: number
+    waarschuwingsapparatuur: number
+  }
+}

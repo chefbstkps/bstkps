@@ -52,6 +52,39 @@
   gap: 0.5rem;
 }
 
+.navbar__menu--desktop {
+  display: flex;
+}
+
+.navbar__menu--mobile-main {
+  display: none;
+}
+
+.navbar__menu--mobile {
+  display: none;
+}
+
+.navbar__mobile-toggle {
+  display: block;
+  background: none;
+  border: none;
+  color: #ccc;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.navbar__mobile-toggle:hover {
+  background-color: #333;
+  color: #fff;
+}
+
+.navbar__mobile-icon {
+  width: 24px;
+  height: 24px;
+}
+
 .navbar__link {
   display: flex;
   align-items: center;
@@ -122,15 +155,66 @@
   height: 18px;
 }
 
+/* Hamburger menu positioning for all screen sizes */
+.navbar__menu--mobile {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  flex-direction: column;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  min-width: 250px;
+}
+
+.navbar__menu--mobile.navbar__menu--open {
+  display: flex;
+}
+
+.navbar__mobile-section {
+  margin-bottom: 1.5rem;
+}
+
+.navbar__mobile-section:last-child {
+  margin-bottom: 0;
+}
+
+.navbar__mobile-section-title {
+  color: #ccc;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #333;
+}
+
+.navbar__menu--mobile .navbar__link {
+  padding: 0.75rem 1rem;
+  width: 100%;
+  justify-content: flex-start;
+  margin-bottom: 0.25rem;
+}
+
+.navbar__menu--mobile .navbar__text {
+  display: block;
+}
+
 @media (max-width: 768px) {
   .navbar__container {
-    flex-direction: column;
-    height: auto;
-    padding: 1rem 0;
+    flex-direction: row;
+    height: 60px;
+    padding: 0 1rem;
+    position: relative;
   }
 
   .navbar__brand {
-    margin-bottom: 1rem;
+    margin-bottom: 0;
+    flex: 1;
   }
 
   .navbar__logo {
@@ -141,17 +225,44 @@
     font-size: 1.25rem;
   }
 
-  .navbar__menu {
-    margin: 1rem 0;
-    flex-wrap: wrap;
-    justify-content: center;
+  .navbar__menu--desktop {
+    display: none;
+  }
+
+  .navbar__menu--mobile-main {
+    display: flex;
+    gap: 0.5rem;
+    margin-right: 1rem;
+  }
+
+  .navbar__menu--mobile {
+    left: 0;
+    right: 0;
+    min-width: auto;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
   }
 
   .navbar__link {
-    padding: 0.5rem 0.75rem;
+    padding: 0.75rem 1rem;
+    width: 100%;
+    justify-content: flex-start;
+    margin-bottom: 0.25rem;
   }
 
   .navbar__text {
+    display: none;
+  }
+
+  .navbar__user {
+    margin-left: auto;
+  }
+}
+
+/* Extra small screens - hide text even in main mobile menu */
+@media (max-width: 480px) {
+  .navbar__menu--mobile-main .navbar__text {
     display: none;
   }
 }
