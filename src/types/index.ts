@@ -7,6 +7,8 @@ export interface Radio {
   serienummer: string
   alias: string
   afdeling: string
+  groep?: string
+  voertuig?: string
   opmerking?: string
   registratiedatum: string
   created_at: string
@@ -87,6 +89,8 @@ export interface RadioFormData {
   serienummer: string
   alias: string
   afdeling: string
+  groep?: string
+  voertuig?: string
   opmerking?: string
   registratiedatum: string
 }

@@ -5,8 +5,35 @@ import { useLanguage } from '../contexts/LanguageContext'
 import { RadioService } from '../services/radioService'
 import { BrandService } from '../services/brandService'
 import { Radio, RadioFormData } from '../types'
-import { Plus, Edit, Trash2, Search } from 'lucide-react'
+import { Plus, Edit, Trash2, Search, Eye, EyeOff } from 'lucide-react'
 import './Radios.css'
+
+// Column visibility configuration
+interface ColumnVisibility {
+  id: boolean
+  merk: boolean
+  model: boolean
+  type: boolean
+  serienummer: boolean
+  alias: boolean
+  afdeling: boolean
+  groep: boolean
+  voertuig: boolean
+  opmerking: boolean
+}
+
+const DEFAULT_COLUMN_VISIBILITY: ColumnVisibility = {
+  id: true,
+  merk: false, // Hidden by default
+  model: true,
+  type: true,
+  serienummer: true,
+  alias: false, // Hidden by default
+  afdeling: true,
+  groep: false, // Hidden by default
+  voertuig: true,
+  opmerking: true,
+}
 
 export default function Radios() {
   const { t } = useLanguage()
@@ -18,6 +45,13 @@ export default function Radios() {
   const [editingRadio, setEditingRadio] = useState<Radio | null>(null)
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
   const [showCsvModal, setShowCsvModal] = useState(false)
+  const [selectedRadios, setSelectedRadios] = useState<Set<string>>(new Set())
+  const [showColumnMenu, setShowColumnMenu] = useState(false)
+  const [columnVisibility, setColumnVisibility] = useState<ColumnVisibility>(() => {
+    // Load from localStorage or use defaults
+    const saved = localStorage.getItem('radios-column-visibility')
+    return saved ? JSON.parse(saved) : DEFAULT_COLUMN_VISIBILITY
+  })
 
   const { data: radios, isLoading, error } = useQuery({
     queryKey: ['radios'],
@@ -37,6 +71,55 @@ export default function Radios() {
       setDeleteConfirm(null)
     },
   })
+
+  const multiDeleteMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      await Promise.all(ids.map(id => RadioService.delete(id)))
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['radios'] })
+      queryClient.invalidateQueries({ queryKey: ['radio-stats'] })
+      setSelectedRadios(new Set())
+    },
+  })
+
+  // Save column visibility to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('radios-column-visibility', JSON.stringify(columnVisibility))
+  }, [columnVisibility])
+
+  const toggleColumn = (column: keyof ColumnVisibility) => {
+    setColumnVisibility(prev => ({
+      ...prev,
+      [column]: !prev[column]
+    }))
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedRadios.size === filteredRadios.length) {
+      setSelectedRadios(new Set())
+    } else {
+      setSelectedRadios(new Set(filteredRadios.map(r => r.id)))
+    }
+  }
+
+  const toggleSelectRadio = (id: string) => {
+    const newSelected = new Set(selectedRadios)
+    if (newSelected.has(id)) {
+      newSelected.delete(id)
+    } else {
+      newSelected.add(id)
+    }
+    setSelectedRadios(newSelected)
+  }
+
+  const handleMultiDelete = () => {
+    if (selectedRadios.size === 0) return
+    
+    if (window.confirm(`Weet je zeker dat je ${selectedRadios.size} radio's permanent wilt verwijderen?`)) {
+      multiDeleteMutation.mutate(Array.from(selectedRadios))
+    }
+  }
 
   const filteredRadios = radios?.filter(radio => {
     const matchesSearch = radio.merk.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -64,7 +147,12 @@ export default function Radios() {
     }
   }
 
-  const handleRowClick = (radio: Radio) => {
+  const handleRowClick = (radio: Radio, e: React.MouseEvent) => {
+    // Don't navigate if clicking on checkbox or action buttons
+    const target = e.target as HTMLElement
+    if (target.closest('.row-checkbox') || target.closest('.action-buttons')) {
+      return
+    }
     navigate(`/radios/${radio.id}`)
   }
 
@@ -116,20 +204,70 @@ export default function Radios() {
 
       {/* Controls */}
       <div className="page__actions">
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="btn btn--primary"
-        >
-          <Plus size={20} />
-          {t('radios.add')}
-        </button>
-        
-        <button
-          onClick={() => setShowCsvModal(true)}
-          className="btn btn--secondary"
-        >
-          📊 Import/Export
-        </button>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="btn btn--primary"
+          >
+            <Plus size={20} />
+            {t('radios.add')}
+          </button>
+          
+          <button
+            onClick={() => setShowCsvModal(true)}
+            className="btn btn--secondary"
+          >
+            📊 Import/Export
+          </button>
+
+          {selectedRadios.size > 0 && (
+            <button
+              onClick={handleMultiDelete}
+              className="btn btn--danger"
+              disabled={multiDeleteMutation.isPending}
+            >
+              <Trash2 size={20} />
+              Verwijder {selectedRadios.size} geselecteerd
+            </button>
+          )}
+
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={() => setShowColumnMenu(!showColumnMenu)}
+              className="btn btn--secondary"
+              title="Kolommen weergeven/verbergen"
+            >
+              {showColumnMenu ? <EyeOff size={20} /> : <Eye size={20} />}
+              Kolommen
+            </button>
+            
+            {showColumnMenu && (
+              <div className="column-menu">
+                <div className="column-menu__header">
+                  <h4>Kolommen weergeven</h4>
+                  <button 
+                    onClick={() => setShowColumnMenu(false)}
+                    className="column-menu__close"
+                  >
+                    ×
+                  </button>
+                </div>
+                <div className="column-menu__items">
+                  {Object.entries(columnVisibility).map(([key, value]) => (
+                    <label key={key} className="column-menu__item">
+                      <input
+                        type="checkbox"
+                        checked={value}
+                        onChange={() => toggleColumn(key as keyof ColumnVisibility)}
+                      />
+                      <span>{key.charAt(0).toUpperCase() + key.slice(1)}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
         
         <div className="search-controls">
           <div className="search-input">
@@ -160,32 +298,57 @@ export default function Radios() {
         <table className="table">
           <thead>
             <tr>
-              <th>{t('radios.id')}</th>
-              <th>{t('radios.merk')}</th>
-              <th>{t('radios.model')}</th>
-              <th>{t('radios.type')}</th>
-              <th>{t('radios.serienummer')}</th>
-              <th>{t('radios.alias')}</th>
-              <th>{t('radios.afdeling')}</th>
-              <th>{t('radios.opmerking')}</th>
+              <th style={{ width: '40px' }}>
+                <input
+                  type="checkbox"
+                  checked={selectedRadios.size === filteredRadios.length && filteredRadios.length > 0}
+                  onChange={toggleSelectAll}
+                  title="Selecteer alles"
+                />
+              </th>
+              {columnVisibility.id && <th>{t('radios.id')}</th>}
+              {columnVisibility.merk && <th>{t('radios.merk')}</th>}
+              {columnVisibility.model && <th>{t('radios.model')}</th>}
+              {columnVisibility.type && <th>{t('radios.type')}</th>}
+              {columnVisibility.serienummer && <th>{t('radios.serienummer')}</th>}
+              {columnVisibility.alias && <th>{t('radios.alias')}</th>}
+              {columnVisibility.afdeling && <th>{t('radios.afdeling')}</th>}
+              {columnVisibility.groep && <th>Groep</th>}
+              {columnVisibility.voertuig && <th>Voertuig</th>}
+              {columnVisibility.opmerking && <th>{t('radios.opmerking')}</th>}
               <th>{t('radios.actions')}</th>
             </tr>
           </thead>
           <tbody>
             {filteredRadios.map((radio) => (
-              <tr key={radio.id} onClick={() => handleRowClick(radio)} className="table-row-clickable">
-                <td>{radio.id}</td>
-                <td>{radio.merk}</td>
-                <td>{radio.model}</td>
-                <td>
-                  <span className={`type-badge type-badge--${radio.type.toLowerCase()}`}>
-                    {radio.type}
-                  </span>
+              <tr 
+                key={radio.id} 
+                onClick={(e) => handleRowClick(radio, e)} 
+                className={`table-row-clickable ${selectedRadios.has(radio.id) ? 'row-selected' : ''}`}
+              >
+                <td className="row-checkbox" onClick={(e) => e.stopPropagation()}>
+                  <input
+                    type="checkbox"
+                    checked={selectedRadios.has(radio.id)}
+                    onChange={() => toggleSelectRadio(radio.id)}
+                  />
                 </td>
-                <td>{radio.serienummer}</td>
-                <td>{radio.alias}</td>
-                <td>{radio.afdeling}</td>
-                <td>{radio.opmerking || '-'}</td>
+                {columnVisibility.id && <td>{radio.id}</td>}
+                {columnVisibility.merk && <td>{radio.merk}</td>}
+                {columnVisibility.model && <td>{radio.model}</td>}
+                {columnVisibility.type && (
+                  <td>
+                    <span className={`type-badge type-badge--${radio.type.toLowerCase()}`}>
+                      {radio.type}
+                    </span>
+                  </td>
+                )}
+                {columnVisibility.serienummer && <td>{radio.serienummer}</td>}
+                {columnVisibility.alias && <td>{radio.alias}</td>}
+                {columnVisibility.afdeling && <td>{radio.afdeling}</td>}
+                {columnVisibility.groep && <td>{radio.groep || '-'}</td>}
+                {columnVisibility.voertuig && <td>{radio.type === 'Mobile' ? (radio.voertuig || '-') : '-'}</td>}
+                {columnVisibility.opmerking && <td>{radio.opmerking || '-'}</td>}
                 <td>
                   <div className="action-buttons" onClick={(e) => e.stopPropagation()}>
                     <button
@@ -271,7 +434,7 @@ export default function Radios() {
               }
               
               const headers = lines[0].split(',').map(h => h.trim())
-              const expectedHeaders = ['ID', 'Merk', 'Model', 'Type', 'Serienummer', 'Alias', 'Afdeling', 'Registratiedatum', 'Opmerking']
+              const expectedHeaders = ['ID', 'Merk', 'Model', 'Type', 'Serienummer', 'Alias', 'Afdeling', 'Groep', 'Voertuig', 'Registratiedatum', 'Opmerking']
               
               // Validate headers
               const missingHeaders = expectedHeaders.filter(h => !headers.includes(h))
@@ -296,12 +459,12 @@ export default function Radios() {
               for (let i = 1; i < lines.length; i++) {
                 const values = lines[i].split(',').map(v => v.trim())
                 
-                if (values.length < 8) {
-                  errors.push(`Rij ${i + 1}: Onvoldoende kolommen (${values.length}/8)`)
+                if (values.length < 10) {
+                  errors.push(`Rij ${i + 1}: Onvoldoende kolommen (${values.length}/10)`)
                   continue
                 }
                 
-                const [id, merk, model, type, serienummer, alias, afdeling, registratiedatum, opmerking] = values
+                const [id, merk, model, type, serienummer, alias, afdeling, groep, voertuig, registratiedatum, opmerking] = values
                 
                 // Validate ID
                 if (!id || id.length !== 4 || !/^\d{4}$/.test(id)) {
@@ -345,6 +508,8 @@ export default function Radios() {
                   serienummer,
                   alias,
                   afdeling,
+                  groep: groep || '',
+                  voertuig: voertuig || '',
                   registratiedatum: registratiedatum || new Date().toISOString().split('T')[0],
                   opmerking: opmerking || ''
                 })
@@ -388,7 +553,7 @@ export default function Radios() {
                 return
               }
               
-              const headers = ['ID', 'Merk', 'Model', 'Type', 'Serienummer', 'Alias', 'Afdeling', 'Registratiedatum', 'Opmerking']
+              const headers = ['ID', 'Merk', 'Model', 'Type', 'Serienummer', 'Alias', 'Afdeling', 'Groep', 'Voertuig', 'Registratiedatum', 'Opmerking']
               const csvContent = [
                 headers.join(','),
                 ...radios.map(radio => [
@@ -399,6 +564,8 @@ export default function Radios() {
                   radio.serienummer,
                   radio.alias,
                   radio.afdeling,
+                  radio.groep || '',
+                  radio.voertuig || '',
                   radio.registratiedatum,
                   radio.opmerking || ''
                 ].join(','))
@@ -441,18 +608,18 @@ function CSVImportExportModal({
 
   // Download CSV template
   const downloadTemplate = () => {
-    const headers = ['ID', 'Merk', 'Model', 'Type', 'Serienummer', 'Alias', 'Afdeling', 'Registratiedatum', 'Opmerking']
+    const headers = ['ID', 'Merk', 'Model', 'Type', 'Serienummer', 'Alias', 'Afdeling', 'Groep', 'Voertuig', 'Registratiedatum', 'Opmerking']
     
     // Sample data rows with unique IDs
     const sampleData = [
-      ['2001', 'Motorola', 'DP4400', 'Portable', '426CPB2001', 'Recherche-01', 'Recherche Parbo', '2024-01-15', 'Nieuwe radio voor recherche team'],
-      ['2002', 'Motorola', 'DP4400', 'Portable', '426CPB2002', 'Recherche-02', 'Recherche Parbo', '2024-01-15', 'Reserve radio'],
-      ['2003', 'Motorola', 'APX8000', 'Mobile', '426CMB2001', 'Patrouille-01', 'Patrouille', '2024-01-20', 'Geïnstalleerd in voertuig 123'],
-      ['2004', 'Kenwood', 'NX-5200', 'Base', '426CBB2001', 'Base-01', 'Communicatie Centrum', '2024-01-25', 'Hoofdstation communicatie'],
-      ['2005', 'Motorola', 'DP4400', 'Portable', '426CPB2003', 'Recherche-03', 'Recherche Parbo', '2024-02-01', ''],
-      ['2006', 'Kenwood', 'NX-5200', 'Mobile', '426CMB2002', 'Patrouille-02', 'Patrouille', '2024-02-05', 'Geïnstalleerd in voertuig 456'],
-      ['2007', 'Motorola', 'APX8000', 'Portable', '426CPB2004', 'Recherche-04', 'Recherche Parbo', '2024-02-10', 'Nieuwe radio met GPS'],
-      ['2008', 'Kenwood', 'NX-5200', 'Base', '426CBB2002', 'Base-02', 'Communicatie Centrum', '2024-02-15', 'Backup station']
+      ['2001', 'Motorola', 'DP4400', 'Portable', '426CPB2001', 'Recherche-01', 'Recherche Parbo', 'Politie', '', '2024-01-15', 'Nieuwe radio voor recherche team'],
+      ['2002', 'Motorola', 'DP4400', 'Portable', '426CPB2002', 'Recherche-02', 'Recherche Parbo', 'Politie', '', '2024-01-15', 'Reserve radio'],
+      ['2003', 'Motorola', 'APX8000', 'Mobile', '426CMB2001', 'Patrouille-01', 'Patrouille', 'Politie', 'Toyota Land Cruiser - PZ-123', '2024-01-20', 'Geïnstalleerd in voertuig 123'],
+      ['2004', 'Kenwood', 'NX-5200', 'Base', '426CBB2001', 'Base-01', 'Communicatie Centrum', 'Brandweer', '', '2024-01-25', 'Hoofdstation communicatie'],
+      ['2005', 'Motorola', 'DP4400', 'Portable', '426CPB2003', 'Recherche-03', 'Recherche Parbo', 'Politie', '', '2024-02-01', ''],
+      ['2006', 'Kenwood', 'NX-5200', 'Mobile', '426CMB2002', 'Patrouille-02', 'Patrouille', 'EMS', 'Mercedes Sprinter - PZ-456', '2024-02-05', 'Geïnstalleerd in voertuig 456'],
+      ['2007', 'Motorola', 'APX8000', 'Portable', '426CPB2004', 'Recherche-04', 'Recherche Parbo', 'Politie', '', '2024-02-10', 'Nieuwe radio met GPS'],
+      ['2008', 'Kenwood', 'NX-5200', 'Base', '426CBB2002', 'Base-02', 'Communicatie Centrum', 'Brandweer', '', '2024-02-15', 'Backup station']
     ]
     
     const csvContent = [
@@ -636,6 +803,8 @@ function RadioModal({ radio, onClose }: { radio: Radio | null; onClose: () => vo
     serienummer: radio?.serienummer || '',
     alias: radio?.alias || '',
     afdeling: radio?.afdeling || '',
+    groep: radio?.groep || '',
+    voertuig: radio?.voertuig || '',
     opmerking: radio?.opmerking || '',
     registratiedatum: radio?.registratiedatum || new Date().toISOString().split('T')[0], // Current date in YYYY-MM-DD format
   })
@@ -962,6 +1131,31 @@ function RadioModal({ radio, onClose }: { radio: Radio | null; onClose: () => vo
                     onChange={(e) => setFormData({ ...formData, afdeling: e.target.value })}
                     required
                     placeholder="Bijv. Recherche Parbo"
+                  />
+                </div>
+                
+                <div className="radio-modal__group">
+                  <label className="radio-modal__label">Groep</label>
+                  <input
+                    type="text"
+                    className="radio-modal__input"
+                    value={formData.groep}
+                    onChange={(e) => setFormData({ ...formData, groep: e.target.value })}
+                    placeholder="Bijv. Politie, Brandweer, EMS"
+                  />
+                </div>
+                
+                <div className="radio-modal__group">
+                  <label className="radio-modal__label">
+                    Voertuig {formData.type === 'Mobile' && <span style={{ fontSize: '0.85em', color: '#666' }}>(alleen voor Mobile)</span>}
+                  </label>
+                  <input
+                    type="text"
+                    className="radio-modal__input"
+                    value={formData.voertuig}
+                    onChange={(e) => setFormData({ ...formData, voertuig: e.target.value })}
+                    placeholder="Bijv. Toyota Land Cruiser - PZ-123"
+                    disabled={formData.type !== 'Mobile'}
                   />
                 </div>
                 

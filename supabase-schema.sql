@@ -13,6 +13,8 @@ CREATE TABLE IF NOT EXISTS radios (
     serienummer VARCHAR(100) NOT NULL UNIQUE,
     alias VARCHAR(100) NOT NULL,
     afdeling VARCHAR(100) NOT NULL,
+    groep VARCHAR(100), -- Group classification: Politie, Brandweer, EMS, etc.
+    voertuig VARCHAR(100), -- Vehicle information for mobile type radios
     opmerking TEXT,
     registratiedatum DATE NOT NULL DEFAULT CURRENT_DATE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -97,6 +99,8 @@ CREATE TABLE IF NOT EXISTS models (
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_radios_type ON radios(type);
 CREATE INDEX IF NOT EXISTS idx_radios_afdeling ON radios(afdeling);
+CREATE INDEX IF NOT EXISTS idx_radios_groep ON radios(groep);
+CREATE INDEX IF NOT EXISTS idx_radios_voertuig ON radios(voertuig);
 CREATE INDEX IF NOT EXISTS idx_radios_created_at ON radios(created_at);
 
 CREATE INDEX IF NOT EXISTS idx_radio_history_radio_id ON radio_history(radio_id);
@@ -159,12 +163,12 @@ CREATE TRIGGER update_models_updated_at
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Insert sample data
-INSERT INTO radios (id, merk, model, type, serienummer, alias, afdeling, opmerking) VALUES
-('0001', 'Motorola', 'DP4400', 'Portable', 'MOT001234', 'Portable-01', 'Brandweer', 'Hoofdradio brandweer'),
-('0002', 'Motorola', 'DP4400', 'Portable', 'MOT001235', 'Portable-02', 'Brandweer', 'Reserve radio'),
-('0003', 'Motorola', 'XPR7550', 'Mobile', 'MOT002001', 'Mobile-01', 'Politie', 'Voertuig radio politie'),
-('0004', 'Motorola', 'XPR7550', 'Mobile', 'MOT002002', 'Mobile-02', 'Politie', 'Voertuig radio politie'),
-('0005', 'Motorola', 'XPR7550', 'Base', 'MOT003001', 'Base-01', 'Meldkamer', 'Basisstation meldkamer')
+INSERT INTO radios (id, merk, model, type, serienummer, alias, afdeling, groep, voertuig, opmerking) VALUES
+('0001', 'Motorola', 'DP4400', 'Portable', 'MOT001234', 'Portable-01', 'Brandweer', 'Brandweer', NULL, 'Hoofdradio brandweer'),
+('0002', 'Motorola', 'DP4400', 'Portable', 'MOT001235', 'Portable-02', 'Brandweer', 'Brandweer', NULL, 'Reserve radio'),
+('0003', 'Motorola', 'XPR7550', 'Mobile', 'MOT002001', 'Mobile-01', 'Politie', 'Politie', 'Toyota Land Cruiser - PZ-001', 'Voertuig radio politie'),
+('0004', 'Motorola', 'XPR7550', 'Mobile', 'MOT002002', 'Mobile-02', 'Politie', 'Politie', 'Ford Ranger - PZ-002', 'Voertuig radio politie'),
+('0005', 'Motorola', 'XPR7550', 'Base', 'MOT003001', 'Base-01', 'Meldkamer', 'EMS', NULL, 'Basisstation meldkamer')
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO accessories (merk, model, serienummer, opmerking) VALUES

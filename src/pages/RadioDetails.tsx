@@ -226,6 +226,16 @@ export default function RadioDetails() {
                   </div>
                 </div>
                 <div className="info-item">
+                  <label className="info-label">Groep</label>
+                  <div className="info-value">{radio.groep || '-'}</div>
+                </div>
+                {radio.type === 'Mobile' && (
+                  <div className="info-item">
+                    <label className="info-label">Voertuig</label>
+                    <div className="info-value">{radio.voertuig || '-'}</div>
+                  </div>
+                )}
+                <div className="info-item">
                   <label className="info-label">Registratiedatum</label>
                   <div className="info-value">
                     {new Date(radio.registratiedatum).toLocaleDateString('nl-NL')}
