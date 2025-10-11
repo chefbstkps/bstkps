@@ -10,6 +10,8 @@ import Radios from './pages/Radios'
 import RadioDetails from './pages/RadioDetails'
 import Accessories from './pages/Accessories'
 import Brands from './pages/Brands'
+import Organizations from './pages/Organizations'
+import Inventory from './pages/Inventory'
 import Storingen from './pages/Storingen'
 import FaultDetails from './pages/FaultDetails'
 import Issue from './pages/Issue'
@@ -32,6 +34,8 @@ function App() {
                     <Route path="/radios/:id" element={<RadioDetails />} />
                     <Route path="/accessories" element={<Accessories />} />
                     <Route path="/brands" element={<Brands />} />
+                    <Route path="/organizations" element={<Organizations />} />
+                    <Route path="/inventory" element={<Inventory />} />
                     <Route path="/storingen" element={<Storingen />} />
                     <Route path="/storingen/:id" element={<FaultDetails />} />
                     <Route path="/issue" element={<Issue />} />

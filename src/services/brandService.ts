@@ -389,6 +389,24 @@ export class BrandService {
     }
   }
 
+  // Get all models for a specific brand (for accessories)
+  static async getAllModelsByBrand(brandId: string): Promise<Model[]> {
+    try {
+      const categories = await this.getCategoriesByBrand(brandId)
+      
+      const allModels = []
+      for (const category of categories) {
+        const models = await this.getModelsByCategory(category.id)
+        allModels.push(...models)
+      }
+      
+      return allModels
+    } catch (error) {
+      console.error('Failed to fetch models for brand:', error)
+      throw error
+    }
+  }
+
   // Stats
   static async getStats(): Promise<BrandStats> {
     try {

@@ -1,8 +1,12 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useLanguage } from '../contexts/LanguageContext'
 import { RadioService } from '../services/radioService'
+import { InventoryService } from '../services/inventoryService'
+import { AccessoryService } from '../services/accessoryService'
+import { OrganizationService } from '../services/organizationService'
+import { type InventoryIssueFormData } from '../types'
 import { ArrowLeft, Edit, Trash2, Battery, Wrench, Building, Tag, Hash, Upload, Car } from 'lucide-react'
 import './RadioDetails.css'
 
@@ -18,6 +22,8 @@ export default function RadioDetails() {
   const [showIdModal, setShowIdModal] = useState(false)
   const [showAliasModal, setShowAliasModal] = useState(false)
   const [showDepartmentModal, setShowDepartmentModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
 
   const { data: radio, isLoading, error } = useQuery({
     queryKey: ['radio', id],
@@ -47,9 +53,15 @@ export default function RadioDetails() {
     },
   })
 
-  const handleDelete = async () => {
-    if (window.confirm(t('common.confirm_delete'))) {
+  const handleDelete = () => {
+    setShowDeleteModal(true)
+  }
+
+  const confirmDelete = () => {
+    if (deleteConfirmText.toLowerCase() === 'confirm') {
       deleteMutation.mutate(id!)
+      setShowDeleteModal(false)
+      setDeleteConfirmText('')
     }
   }
 
@@ -97,7 +109,7 @@ export default function RadioDetails() {
   const getActionLabel = (action: string) => {
     switch (action) {
       case 'battery_replaced':
-        return 'Batterij vervangen'
+        return 'Accessoir vervangen'
       case 'serviced':
         return 'Geserviced'
       case 'department_changed':
@@ -226,8 +238,12 @@ export default function RadioDetails() {
                   </div>
                 </div>
                 <div className="info-item">
-                  <label className="info-label">Groep</label>
+                  <label className="info-label">Organisatie</label>
                   <div className="info-value">{radio.groep || '-'}</div>
+                </div>
+                <div className="info-item">
+                  <label className="info-label">Structuur</label>
+                  <div className="info-value">{radio.structuur || '-'}</div>
                 </div>
                 {radio.type === 'Mobile' && (
                   <div className="info-item">
@@ -239,6 +255,14 @@ export default function RadioDetails() {
                   <label className="info-label">Registratiedatum</label>
                   <div className="info-value">
                     {new Date(radio.registratiedatum).toLocaleDateString('nl-NL')}
+                  </div>
+                </div>
+                <div className="info-item">
+                  <label className="info-label">Status</label>
+                  <div className="info-value">
+                    <span className={`status-badge status-badge--${radio.status.toLowerCase()}`}>
+                      {radio.status}
+                    </span>
                   </div>
                 </div>
                 <div className="info-item">
@@ -263,7 +287,7 @@ export default function RadioDetails() {
                   disabled={addHistoryMutation.isPending}
                 >
                   <Battery size={20} />
-                  Batterij Vervangen
+                  Accessoir Vervangen
                 </button>
                 <button
                   onClick={handleService}
@@ -311,6 +335,36 @@ export default function RadioDetails() {
                               Datum: <strong>{new Date(entry.details.service_date).toLocaleDateString('nl-NL')}</strong>
                             </span>
                           )}
+                          {entry.details.naam && (
+                            <span className="detail-item">
+                              Naam: <strong>{entry.details.naam}</strong>
+                            </span>
+                          )}
+                          {entry.details.voornaam && (
+                            <span className="detail-item">
+                              Voornaam: <strong>{entry.details.voornaam}</strong>
+                            </span>
+                          )}
+                          {entry.details.telefoonnummer && (
+                            <span className="detail-item">
+                              Telefoonnummer: <strong>{entry.details.telefoonnummer}</strong>
+                            </span>
+                          )}
+                          {entry.details.rang_functie && (
+                            <span className="detail-item">
+                              Rang/Functie: <strong>{entry.details.rang_functie}</strong>
+                            </span>
+                          )}
+                          {entry.details.accessory_info && (
+                            <span className="detail-item">
+                              Accessoire: <strong>{entry.details.accessory_info}</strong>
+                            </span>
+                          )}
+                          {entry.details.quantity && (
+                            <span className="detail-item">
+                              Aantal: <strong>{entry.details.quantity}</strong>
+                            </span>
+                          )}
                           {entry.details.notes && (
                             <span className="detail-item">
                               Opmerking: <strong>{entry.details.notes}</strong>
@@ -347,21 +401,122 @@ export default function RadioDetails() {
         </div>
       </div>
 
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <div className="modal__header">
+              <h3 className="modal__title">{t('common.confirm_delete')}</h3>
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false)
+                  setDeleteConfirmText('')
+                }}
+                className="modal__close"
+              >
+                ×
+              </button>
+            </div>
+            <div className="radio-details-modal-body">
+              <p style={{ marginBottom: '1rem', color: '#c62828', fontWeight: '500' }}>
+                ⚠️ Weet je zeker dat je deze radio permanent wilt verwijderen?
+              </p>
+              <p style={{ marginBottom: '1rem', fontSize: '0.875rem', color: '#666' }}>
+                Deze actie kan niet ongedaan worden gemaakt. Type <strong>"Confirm"</strong> om te bevestigen:
+              </p>
+              <input
+                type="text"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                placeholder="Type 'Confirm' om te bevestigen"
+                className="radio-modal__input"
+                style={{ width: '100%', marginBottom: '0' }}
+                autoFocus
+              />
+            </div>
+            <div className="modal__actions">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false)
+                  setDeleteConfirmText('')
+                }}
+                className="btn btn--secondary"
+              >
+                {t('common.cancel')}
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="btn btn--danger"
+                disabled={deleteMutation.isPending || deleteConfirmText.toLowerCase() !== 'confirm'}
+              >
+                {deleteMutation.isPending ? t('common.loading') : t('common.delete')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Battery Replacement Modal */}
       {showBatteryModal && (
         <BatteryReplacementModal
+          radioId={id!}
           onClose={() => setShowBatteryModal(false)}
-          onSubmit={(date, notes) => {
-            addHistoryMutation.mutate({
+          onSubmit={async (date, notes, naam, voornaam, telefoonnummer, rangFunctie, organizationId, accessoryId, quantity) => {
+            // Get accessory info for history
+            let accessoryInfo = ''
+            if (accessoryId) {
+              try {
+                const accessory = await AccessoryService.getById(accessoryId)
+                if (accessory) {
+                  accessoryInfo = `${accessory.merk} ${accessory.model}${accessory.omschrijving ? ` (${accessory.omschrijving})` : ''}`
+                }
+              } catch (error) {
+                console.error('Failed to fetch accessory info:', error)
+              }
+            }
+
+            // First add the history entry
+            await addHistoryMutation.mutateAsync({
               action: 'battery_replaced',
-              description: 'Batterij vervangen',
+              description: accessoryInfo ? `${accessoryInfo} vervangen` : 'Accessoir vervangen',
               details: {
                 service_date: date,
-                notes: notes
+                notes: notes,
+                naam: naam,
+                voornaam: voornaam,
+                telefoonnummer: telefoonnummer,
+                rang_functie: rangFunctie,
+                accessory_info: accessoryInfo,
+                quantity: quantity
               }
             })
+
+            // Then automatically register the inventory issue
+            if (organizationId && accessoryId && quantity) {
+              try {
+                const issueData: InventoryIssueFormData = {
+                  organization_id: organizationId,
+                  accessory_id: accessoryId,
+                  quantity: quantity,
+                  transaction_date: date,
+                  issued_to_type: 'radio',
+                  issued_to_id: id!,
+                  issue_reason: 'Accessoir vervanging',
+                  notes: notes
+                }
+                await InventoryService.addIssue(issueData)
+                
+                // Invalidate dashboard stats to update recent issues section
+                queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] })
+              } catch (error) {
+                console.error('Failed to register inventory issue:', error)
+                // Don't fail the whole operation if inventory update fails
+              }
+            }
+
             setShowBatteryModal(false)
           }}
+          isLoading={addHistoryMutation.isPending}
         />
       )}
 
@@ -369,17 +524,25 @@ export default function RadioDetails() {
       {showServiceModal && (
         <ServiceModal
           onClose={() => setShowServiceModal(false)}
-          onSubmit={(date, notes) => {
+          onSubmit={(date, notes, naam, voornaam, telefoonnummer, rangFunctie) => {
             addHistoryMutation.mutate({
               action: 'serviced',
               description: 'Radio geserviced',
               details: {
                 service_date: date,
-                notes: notes
+                notes: notes,
+                naam: naam,
+                voornaam: voornaam,
+                telefoonnummer: telefoonnummer,
+                rang_functie: rangFunctie
+              }
+            }, {
+              onSuccess: () => {
+                setShowServiceModal(false)
               }
             })
-            setShowServiceModal(false)
           }}
+          isLoading={addHistoryMutation.isPending}
         />
       )}
 
@@ -496,25 +659,91 @@ export default function RadioDetails() {
 
 // Battery Replacement Modal Component
 function BatteryReplacementModal({ 
+  radioId: _radioId,
   onClose, 
-  onSubmit 
+  onSubmit,
+  isLoading = false
 }: { 
+  radioId: string
   onClose: () => void
-  onSubmit: (date: string, notes: string) => void 
+  onSubmit: (date: string, notes: string, naam: string, voornaam: string, telefoonnummer: string, rangFunctie: string, organizationId?: string, accessoryId?: string, quantity?: number) => void 
+  isLoading?: boolean
 }) {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [notes, setNotes] = useState('')
+  const [naam, setNaam] = useState('')
+  const [voornaam, setVoornaam] = useState('')
+  const [telefoonnummer, setTelefoonnummer] = useState('')
+  const [rangFunctie, setRangFunctie] = useState('')
+  const [organizationId, setOrganizationId] = useState('')
+  const [accessoryId, setAccessoryId] = useState('')
+  const [quantity, setQuantity] = useState(1)
+  const [errorMessage, setErrorMessage] = useState('')
+
+  // Fetch organizations and accessories
+  const { data: organizations } = useQuery({
+    queryKey: ['organizations'],
+    queryFn: () => OrganizationService.getAllGroepen(),
+  })
+
+  const { data: accessories } = useQuery({
+    queryKey: ['accessories'],
+    queryFn: () => AccessoryService.getAll(),
+  })
+
+  // Set default organization to "Politie" when organizations are loaded
+  useEffect(() => {
+    if (organizations && organizations.length > 0 && !organizationId) {
+      const politieOrg = organizations.find(org => org.name.toLowerCase() === 'politie')
+      if (politieOrg) {
+        setOrganizationId(politieOrg.id)
+      }
+    }
+  }, [organizations, organizationId])
+
+  // Fetch inventory for selected organization and accessory
+  const { data: inventoryItem } = useQuery({
+    queryKey: ['inventory-item', organizationId, accessoryId],
+    queryFn: () => organizationId && accessoryId 
+      ? InventoryService.getInventoryByAccessory(organizationId, accessoryId)
+      : Promise.resolve(null),
+    enabled: !!(organizationId && accessoryId),
+  })
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onSubmit(date, notes)
+    setErrorMessage('')
+
+    // Validate stock before submitting
+    if (inventoryItem && inventoryItem.current_stock < quantity) {
+      setErrorMessage(`Onvoldoende voorraad! Beschikbaar: ${inventoryItem.current_stock}, Gevraagd: ${quantity}`)
+      return
+    }
+
+    if (organizationId && accessoryId && !inventoryItem) {
+      setErrorMessage('Dit accessoire heeft geen voorraad in deze organisatie. Registreer eerst een aankoop.')
+      return
+    }
+
+    onSubmit(date, notes, naam, voornaam, telefoonnummer, rangFunctie, organizationId, accessoryId, quantity)
   }
+
+  const getStockStatus = () => {
+    if (!inventoryItem) return null
+    const stock = inventoryItem.current_stock
+    if (stock === 0) return { type: 'danger', text: 'Niet op voorraad', stock }
+    if (stock < quantity) return { type: 'danger', text: 'Onvoldoende voorraad', stock }
+    if (stock <= inventoryItem.low_stock_threshold) return { type: 'warning', text: 'Lage voorraad', stock }
+    return { type: 'success', text: 'Op voorraad', stock }
+  }
+
+  const stockStatus = getStockStatus()
 
   return (
     <div className="modal-overlay">
       <div className="modal">
         <div className="modal__header">
-          <h2>Batterij Vervangen</h2>
+          <h2>Accessoir Vervangen</h2>
           <button onClick={onClose} className="modal__close">×</button>
         </div>
         <div className="service-modal__wrapper">
@@ -532,6 +761,123 @@ function BatteryReplacementModal({
                   />
                 </div>
               </div>
+
+              <div className="service-modal__grid">
+                <div className="service-modal__group">
+                  <label className="service-modal__label">Organisatie (voor inventory) *</label>
+                  <select
+                    className="service-modal__input"
+                    value={organizationId}
+                    onChange={(e) => setOrganizationId(e.target.value)}
+                    required
+                  >
+                    <option value="">Selecteer organisatie</option>
+                    {organizations?.map(org => (
+                      <option key={org.id} value={org.id}>{org.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="service-modal__group">
+                  <label className="service-modal__label">Accessoire type *</label>
+                  <select
+                    className="service-modal__input"
+                    value={accessoryId}
+                    onChange={(e) => setAccessoryId(e.target.value)}
+                    required
+                  >
+                    <option value="">Selecteer accessoire</option>
+                    {accessories?.map(acc => (
+                      <option key={acc.id} value={acc.id}>
+                        {acc.merk} - {acc.model}{acc.omschrijving ? ` (${acc.omschrijving})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Stock Status Indicator */}
+              {stockStatus && organizationId && accessoryId && (
+                <div className={`stock-status-indicator stock-status-indicator--${stockStatus.type}`}>
+                  {stockStatus.text} • Beschikbaar: <strong>{stockStatus.stock}</strong>
+                </div>
+              )}
+
+              {/* Warning if no inventory record exists */}
+              {organizationId && accessoryId && !inventoryItem && (
+                <div className="inventory-warning">
+                  Geen voorraad geregistreerd voor dit accessoire
+                </div>
+              )}
+
+              {/* Error Message */}
+              {errorMessage && (
+                <div className="inventory-error">
+                  {errorMessage}
+                </div>
+              )}
+
+              <div className="service-modal__grid">
+                <div className="service-modal__group">
+                  <label className="service-modal__label">Aantal *</label>
+                  <input
+                    type="number"
+                    min="1"
+                    className="service-modal__input"
+                    value={quantity}
+                    onChange={(e) => {
+                      setQuantity(parseInt(e.target.value))
+                      setErrorMessage('') // Clear error when quantity changes
+                    }}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="service-modal__grid">
+                <div className="service-modal__group">
+                  <label className="service-modal__label">Naam</label>
+                  <input
+                    type="text"
+                    className="service-modal__input"
+                    value={naam}
+                    onChange={(e) => setNaam(e.target.value)}
+                    placeholder="Achternaam"
+                  />
+                </div>
+                <div className="service-modal__group">
+                  <label className="service-modal__label">Voornaam</label>
+                  <input
+                    type="text"
+                    className="service-modal__input"
+                    value={voornaam}
+                    onChange={(e) => setVoornaam(e.target.value)}
+                    placeholder="Voornaam"
+                  />
+                </div>
+              </div>
+
+              <div className="service-modal__grid">
+                <div className="service-modal__group">
+                  <label className="service-modal__label">Telefoonnummer</label>
+                  <input
+                    type="tel"
+                    className="service-modal__input"
+                    value={telefoonnummer}
+                    onChange={(e) => setTelefoonnummer(e.target.value)}
+                    placeholder="Telefoonnummer"
+                  />
+                </div>
+                <div className="service-modal__group">
+                  <label className="service-modal__label">Rang/Functie</label>
+                  <input
+                    type="text"
+                    className="service-modal__input"
+                    value={rangFunctie}
+                    onChange={(e) => setRangFunctie(e.target.value)}
+                    placeholder="Rang of functie"
+                  />
+                </div>
+              </div>
               
               <div className="service-modal__group service-modal__group--full">
                 <label className="service-modal__label">Opmerkingen</label>
@@ -539,7 +885,7 @@ function BatteryReplacementModal({
                   className="service-modal__textarea"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Optionele opmerkingen over de batterij vervanging..."
+                  placeholder="Optionele opmerkingen over de accessoir vervanging..."
                   rows={3}
                 />
               </div>
@@ -550,14 +896,16 @@ function BatteryReplacementModal({
                 type="button"
                 onClick={onClose}
                 className="btn btn--secondary"
+                disabled={isLoading}
               >
                 Annuleren
               </button>
               <button
                 type="submit"
                 className="btn btn--primary"
+                disabled={isLoading}
               >
-                Batterij Vervangen Registreren
+                {isLoading ? 'Bezig met opslaan...' : 'Accessoir Vervangen Registreren'}
               </button>
             </div>
           </form>
@@ -570,17 +918,23 @@ function BatteryReplacementModal({
 // Service Modal Component
 function ServiceModal({ 
   onClose, 
-  onSubmit 
+  onSubmit,
+  isLoading = false
 }: { 
   onClose: () => void
-  onSubmit: (date: string, notes: string) => void 
+  onSubmit: (date: string, notes: string, naam: string, voornaam: string, telefoonnummer: string, rangFunctie: string) => void 
+  isLoading?: boolean
 }) {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [notes, setNotes] = useState('')
+  const [naam, setNaam] = useState('')
+  const [voornaam, setVoornaam] = useState('')
+  const [telefoonnummer, setTelefoonnummer] = useState('')
+  const [rangFunctie, setRangFunctie] = useState('')
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onSubmit(date, notes)
+    onSubmit(date, notes, naam, voornaam, telefoonnummer, rangFunctie)
   }
 
   return (
@@ -605,6 +959,52 @@ function ServiceModal({
                   />
                 </div>
               </div>
+
+              <div className="service-modal__grid">
+                <div className="service-modal__group">
+                  <label className="service-modal__label">Naam</label>
+                  <input
+                    type="text"
+                    className="service-modal__input"
+                    value={naam}
+                    onChange={(e) => setNaam(e.target.value)}
+                    placeholder="Achternaam"
+                  />
+                </div>
+                <div className="service-modal__group">
+                  <label className="service-modal__label">Voornaam</label>
+                  <input
+                    type="text"
+                    className="service-modal__input"
+                    value={voornaam}
+                    onChange={(e) => setVoornaam(e.target.value)}
+                    placeholder="Voornaam"
+                  />
+                </div>
+              </div>
+
+              <div className="service-modal__grid">
+                <div className="service-modal__group">
+                  <label className="service-modal__label">Telefoonnummer</label>
+                  <input
+                    type="tel"
+                    className="service-modal__input"
+                    value={telefoonnummer}
+                    onChange={(e) => setTelefoonnummer(e.target.value)}
+                    placeholder="Telefoonnummer"
+                  />
+                </div>
+                <div className="service-modal__group">
+                  <label className="service-modal__label">Rang/Functie</label>
+                  <input
+                    type="text"
+                    className="service-modal__input"
+                    value={rangFunctie}
+                    onChange={(e) => setRangFunctie(e.target.value)}
+                    placeholder="Rang of functie"
+                  />
+                </div>
+              </div>
               
               <div className="service-modal__group service-modal__group--full">
                 <label className="service-modal__label">Opmerkingen</label>
@@ -623,14 +1023,16 @@ function ServiceModal({
                 type="button"
                 onClick={onClose}
                 className="btn btn--secondary"
+                disabled={isLoading}
               >
                 Annuleren
               </button>
               <button
                 type="submit"
                 className="btn btn--primary"
+                disabled={isLoading}
               >
-                Service Registreren
+                {isLoading ? 'Bezig met opslaan...' : 'Service Registreren'}
               </button>
             </div>
           </form>

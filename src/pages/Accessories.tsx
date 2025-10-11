@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useLanguage } from '../contexts/LanguageContext'
 import { AccessoryService } from '../services/accessoryService'
-import { Accessory, AccessoryFormData } from '../types'
+import { BrandService } from '../services/brandService'
+import { Accessory, AccessoryFormData, Brand, Model } from '../types'
 import { Plus, Edit, Trash2, Search, Package } from 'lucide-react'
 import './Accessories.css'
 
@@ -36,6 +37,7 @@ export default function Accessories() {
   const filteredAccessories = accessories?.filter(accessory =>
     accessory.merk.toLowerCase().includes(searchTerm.toLowerCase()) ||
     accessory.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (accessory.omschrijving && accessory.omschrijving.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (accessory.serienummer && accessory.serienummer.toLowerCase().includes(searchTerm.toLowerCase()))
   ) || []
 
@@ -121,6 +123,7 @@ export default function Accessories() {
             <tr>
               <th>Merk</th>
               <th>Model</th>
+              <th>Omschrijving</th>
               <th>Serienummer</th>
               <th>Opmerking</th>
               <th>Acties</th>
@@ -131,10 +134,11 @@ export default function Accessories() {
               <tr key={accessory.id}>
                 <td>{accessory.merk}</td>
                 <td>{accessory.model}</td>
+                <td>{accessory.omschrijving || '-'}</td>
                 <td>{accessory.serienummer || '-'}</td>
                 <td>{accessory.opmerking || '-'}</td>
                 <td>
-                  <div className="action-buttons">
+                  <div className="accessories-action-buttons">
                     <button
                       onClick={() => handleEdit(accessory)}
                       className="btn btn--icon btn--secondary"
@@ -213,9 +217,62 @@ function AccessoryModal({ accessory, onClose }: { accessory: Accessory | null; o
   const [formData, setFormData] = useState<AccessoryFormData>({
     merk: accessory?.merk || '',
     model: accessory?.model || '',
+    omschrijving: accessory?.omschrijving || '',
     serienummer: accessory?.serienummer || '',
     opmerking: accessory?.opmerking || '',
   })
+  const [brands, setBrands] = useState<Brand[]>([])
+  const [models, setModels] = useState<Model[]>([])
+  const [selectedBrandId, setSelectedBrandId] = useState<string>('')
+  const [isLoadingBrands, setIsLoadingBrands] = useState(true)
+  const [isLoadingModels, setIsLoadingModels] = useState(false)
+
+  // Fetch brands on mount
+  useEffect(() => {
+    const fetchBrands = async () => {
+      try {
+        setIsLoadingBrands(true)
+        const brandsData = await BrandService.getAll()
+        setBrands(brandsData)
+      } catch (error) {
+        console.error('Failed to fetch brands:', error)
+      } finally {
+        setIsLoadingBrands(false)
+      }
+    }
+    fetchBrands()
+  }, [])
+
+  // When editing, find and set the brand ID based on the brand name
+  useEffect(() => {
+    if (accessory && brands.length > 0) {
+      const matchingBrand = brands.find(b => b.name === accessory.merk)
+      if (matchingBrand) {
+        setSelectedBrandId(matchingBrand.id)
+      }
+    }
+  }, [accessory, brands])
+
+  // Fetch models when brand is selected
+  useEffect(() => {
+    const fetchModels = async () => {
+      if (selectedBrandId) {
+        try {
+          setIsLoadingModels(true)
+          const modelsData = await BrandService.getAllModelsByBrand(selectedBrandId)
+          setModels(modelsData)
+        } catch (error) {
+          console.error('Failed to fetch models:', error)
+          setModels([])
+        } finally {
+          setIsLoadingModels(false)
+        }
+      } else {
+        setModels([])
+      }
+    }
+    fetchModels()
+  }, [selectedBrandId])
 
   const createMutation = useMutation({
     mutationFn: (data: AccessoryFormData) => AccessoryService.create(data),
@@ -235,6 +292,25 @@ function AccessoryModal({ accessory, onClose }: { accessory: Accessory | null; o
       onClose()
     },
   })
+
+  const handleBrandChange = (brandId: string) => {
+    setSelectedBrandId(brandId)
+    const selectedBrand = brands.find(b => b.id === brandId)
+    if (selectedBrand) {
+      setFormData({ ...formData, merk: selectedBrand.name, model: '' })
+    } else {
+      setFormData({ ...formData, merk: '', model: '' })
+    }
+  }
+
+  const handleModelChange = (modelId: string) => {
+    const selectedModel = models.find(m => m.id === modelId)
+    if (selectedModel) {
+      setFormData({ ...formData, model: selectedModel.name })
+    } else {
+      setFormData({ ...formData, model: '' })
+    }
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -262,25 +338,56 @@ function AccessoryModal({ accessory, onClose }: { accessory: Accessory | null; o
           <div className="accessory-modal__grid">
             <div className="accessory-modal__group">
               <label className="accessory-modal__label">Merk *</label>
-              <input
-                type="text"
+              <select
                 className="accessory-modal__input"
-                value={formData.merk}
-                onChange={(e) => setFormData({ ...formData, merk: e.target.value })}
+                value={selectedBrandId}
+                onChange={(e) => handleBrandChange(e.target.value)}
                 required
-                placeholder="Bijv. Motorola"
-              />
+                disabled={isLoadingBrands}
+              >
+                <option value="">
+                  {isLoadingBrands ? 'Merken laden...' : 'Selecteer een merk'}
+                </option>
+                {brands.map((brand) => (
+                  <option key={brand.id} value={brand.id}>
+                    {brand.name}
+                  </option>
+                ))}
+              </select>
             </div>
             
             <div className="accessory-modal__group">
               <label className="accessory-modal__label">Model *</label>
+              <select
+                className="accessory-modal__input"
+                value={models.find(m => m.name === formData.model)?.id || ''}
+                onChange={(e) => handleModelChange(e.target.value)}
+                required
+                disabled={!selectedBrandId || isLoadingModels}
+              >
+                <option value="">
+                  {!selectedBrandId 
+                    ? 'Selecteer eerst een merk' 
+                    : isLoadingModels 
+                    ? 'Modellen laden...' 
+                    : 'Selecteer een model'}
+                </option>
+                {models.map((model) => (
+                  <option key={model.id} value={model.id}>
+                    {model.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="accessory-modal__group">
+              <label className="accessory-modal__label">Omschrijving</label>
               <input
                 type="text"
                 className="accessory-modal__input"
-                value={formData.model}
-                onChange={(e) => setFormData({ ...formData, model: e.target.value })}
-                required
-                placeholder="Bijv. Speaker Microphone"
+                value={formData.omschrijving}
+                onChange={(e) => setFormData({ ...formData, omschrijving: e.target.value })}
+                placeholder="Optionele omschrijving"
               />
             </div>
             

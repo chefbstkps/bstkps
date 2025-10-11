@@ -8,8 +8,10 @@ export interface Radio {
   alias: string
   afdeling: string
   groep?: string
+  structuur?: string
   voertuig?: string
   opmerking?: string
+  status: 'Actief' | 'Defect' | 'Kwijtgeraakt' | 'Ingetrokken' | 'Uitgeschakeld' | 'Inactief'
   registratiedatum: string
   created_at: string
   updated_at: string
@@ -26,6 +28,12 @@ export interface RadioHistory {
     new_value?: string
     service_date?: string
     notes?: string
+    naam?: string
+    voornaam?: string
+    telefoonnummer?: string
+    rang_functie?: string
+    accessory_info?: string
+    quantity?: number
     vehicle_info?: {
       merk: string
       model: string
@@ -39,6 +47,7 @@ export interface Accessory {
   id: string
   merk: string
   model: string
+  omschrijving?: string
   serienummer?: string
   alias?: string
   opmerking?: string
@@ -55,6 +64,8 @@ export interface Issue {
   issued_to: string
   issued_at: string
   notes?: string
+  accessory_info?: string
+  quantity?: number
 }
 
 export interface Installation {
@@ -90,14 +101,17 @@ export interface RadioFormData {
   alias: string
   afdeling: string
   groep?: string
+  structuur?: string
   voertuig?: string
   opmerking?: string
+  status: 'Actief' | 'Defect' | 'Kwijtgeraakt' | 'Ingetrokken' | 'Uitgeschakeld' | 'Inactief'
   registratiedatum: string
 }
 
 export interface AccessoryFormData {
   merk: string
   model: string
+  omschrijving?: string
   serienummer?: string
   opmerking?: string
 }
@@ -262,4 +276,141 @@ export interface StoringStats {
     telefonie: number
     waarschuwingsapparatuur: number
   }
+}
+
+// Organizations types (Groepen, Structuren, Afdelingen)
+export interface Groep {
+  id: string
+  name: string
+  description?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface Structuur {
+  id: string
+  groep_id: string
+  name: string
+  description?: string
+  created_at: string
+  updated_at: string
+  groep?: Groep
+}
+
+export interface Afdeling {
+  id: string
+  structuur_id: string
+  name: string
+  description?: string
+  created_at: string
+  updated_at: string
+  structuur?: Structuur
+}
+
+// Form data types for organizations
+export interface GroepFormData {
+  name: string
+  description?: string
+}
+
+export interface StructuurFormData {
+  groep_id: string
+  name: string
+  description?: string
+}
+
+export interface AfdelingFormData {
+  structuur_id: string
+  name: string
+  description?: string
+}
+
+// Hierarchical data structure for UI
+export interface GroepWithDetails extends Groep {
+  structuren: StructuurWithDetails[]
+}
+
+export interface StructuurWithDetails extends Structuur {
+  afdelingen: Afdeling[]
+}
+
+// Stats for organizations
+export interface OrganizationStats {
+  total_groepen: number
+  total_structuren: number
+  total_afdelingen: number
+}
+
+// Inventory types
+export interface Inventory {
+  id: string
+  organization_id: string
+  accessory_id: string
+  current_stock: number
+  low_stock_threshold: number
+  created_at: string
+  updated_at: string
+  accessory?: Accessory
+}
+
+export interface InventoryTransaction {
+  id: string
+  organization_id: string
+  accessory_id: string
+  transaction_type: 'purchase' | 'issue'
+  quantity: number
+  transaction_date: string
+  // Purchase-specific fields
+  unit_price?: number
+  total_price?: number
+  supplier?: string
+  invoice_number?: string
+  // Issue-specific fields
+  issued_to_type?: 'radio' | 'installation' | 'employee'
+  issued_to_id?: string
+  issue_reason?: string
+  // Common fields
+  notes?: string
+  created_by?: string
+  created_at: string
+  accessory?: Accessory
+}
+
+// Form data types for inventory
+export interface PurchaseFormData {
+  organization_id: string
+  accessory_id: string
+  quantity: number
+  transaction_date: string
+  unit_price: number
+  total_price: number
+  supplier: string
+  invoice_number: string
+  notes?: string
+}
+
+export interface InventoryIssueFormData {
+  organization_id: string
+  accessory_id: string
+  quantity: number
+  transaction_date: string
+  issued_to_type: 'radio' | 'installation' | 'employee'
+  issued_to_id: string
+  issue_reason: string
+  notes?: string
+}
+
+// Inventory with details
+export interface InventoryWithDetails extends Inventory {
+  accessory: Accessory
+  transactions: InventoryTransaction[]
+}
+
+// Stats for inventory
+export interface InventoryStats {
+  total_value: number
+  unique_products: number
+  low_stock_count: number
+  recent_transactions_count: number
+  total_items: number
 }

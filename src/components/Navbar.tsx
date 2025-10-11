@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useAuth } from '../contexts/AuthContext'
-import { Radio, Package, Upload, Wrench, Home, LogOut, Tag, Menu, X, AlertTriangle } from 'lucide-react'
+import { Radio, Package, Upload, Wrench, Home, LogOut, Tag, Menu, X, AlertTriangle, Building2, Archive } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import './Navbar.css'
 
@@ -25,14 +25,16 @@ export default function Navbar() {
     { path: '/', label: t('nav.dashboard'), icon: Home },
     { path: '/radios', label: t('nav.radios'), icon: Radio },
     { path: '/storingen', label: 'Storingen', icon: AlertTriangle },
-    { path: '/issue', label: t('nav.issue'), icon: Upload },
     { path: '/installation', label: t('nav.installation'), icon: Wrench },
   ]
 
   // Secondary navigation items (in hamburger menu on all screen sizes)
   const secondaryNavItems = [
+    { path: '/issue', label: t('nav.issue'), icon: Upload },
     { path: '/accessories', label: t('nav.accessories'), icon: Package },
+    { path: '/inventory', label: 'Inventory', icon: Archive },
     { path: '/brands', label: t('nav.brands'), icon: Tag },
+    { path: '/organizations', label: 'Organisaties', icon: Building2 },
   ]
 
   const toggleMobileMenu = () => {

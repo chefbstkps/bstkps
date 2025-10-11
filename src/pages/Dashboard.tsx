@@ -135,7 +135,8 @@ export default function Dashboard() {
                     <div key={issue.id} className="activity-item">
                       <div className="activity-item__content">
                         <div className="activity-item__title">
-                          {issue.item_type === 'radio' ? 'Radio' : 'Accessoire'} afgegeven
+                          {issue.accessory_info || `${issue.item_type === 'radio' ? 'Radio' : 'Accessoire'} afgegeven`}
+                          {issue.quantity && issue.quantity > 1 && ` (${issue.quantity}x)`}
                         </div>
                         <div className="activity-item__details">
                           Aan: {issue.issued_to} - {issue.afdeling}

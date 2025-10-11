@@ -51,8 +51,8 @@ export class DashboardService {
 
       const recentInstallations = await installationsResponse.json()
 
-      // Get recent issues
-      const issuesResponse = await fetch(`${supabaseUrl}/rest/v1/issues?select=*&order=issued_at.desc&limit=5`, {
+      // Get recent issues from inventory_transactions (new system)
+      const issuesResponse = await fetch(`${supabaseUrl}/rest/v1/inventory_transactions?select=*,accessories(merk,model,omschrijving),groepen(name)&transaction_type=eq.issue&order=transaction_date.desc,created_at.desc&limit=5`, {
         headers: {
           'apikey': supabaseAnonKey,
           'Authorization': `Bearer ${supabaseAnonKey}`,
@@ -64,7 +64,54 @@ export class DashboardService {
         throw new Error(`HTTP error! status: ${issuesResponse.status}`)
       }
 
-      const recentIssues = await issuesResponse.json()
+      const inventoryIssues = await issuesResponse.json()
+      
+      // Fetch radio information for issues where issued_to_type is 'radio'
+      const radioIds = inventoryIssues
+        .filter((t: any) => t.issued_to_type === 'radio' && t.issued_to_id)
+        .map((t: any) => t.issued_to_id)
+      
+      let radiosMap = new Map()
+      if (radioIds.length > 0) {
+        const radiosResponse = await fetch(`${supabaseUrl}/rest/v1/radios?select=id,merk,model,alias&id=in.(${radioIds.join(',')})`, {
+          headers: {
+            'apikey': supabaseAnonKey,
+            'Authorization': `Bearer ${supabaseAnonKey}`,
+            'Content-Type': 'application/json'
+          }
+        })
+        if (radiosResponse.ok) {
+          const radiosData = await radiosResponse.json()
+          radiosData.forEach((radio: any) => {
+            radiosMap.set(radio.id, radio)
+          })
+        }
+      }
+      
+      // Transform inventory transactions to match the Issue interface
+      const recentIssues = inventoryIssues.map((transaction: any) => {
+        let issuedTo = transaction.issued_to_id || 'Onbekend'
+        
+        // If issued to a radio, get radio info
+        if (transaction.issued_to_type === 'radio' && radiosMap.has(transaction.issued_to_id)) {
+          const radio = radiosMap.get(transaction.issued_to_id)
+          issuedTo = `Radio ${radio.id}${radio.alias ? ` (${radio.alias})` : ''}`
+        }
+        
+        return {
+          id: transaction.id,
+          item_type: 'accessory',
+          item_id: transaction.accessory_id,
+          afdeling: transaction.groepen?.name || 'Onbekend',
+          issued_to: issuedTo,
+          issued_at: transaction.transaction_date || transaction.created_at,
+          notes: transaction.notes,
+          accessory_info: transaction.accessories 
+            ? `${transaction.accessories.merk} ${transaction.accessories.model}${transaction.accessories.omschrijving ? ` (${transaction.accessories.omschrijving})` : ''}`
+            : 'Onbekend accessoire',
+          quantity: transaction.quantity
+        }
+      })
 
       // Get recent registrations
       const registrationsResponse = await fetch(`${supabaseUrl}/rest/v1/radios?select=*&order=created_at.desc&limit=5`, {
