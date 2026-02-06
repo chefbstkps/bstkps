@@ -8,9 +8,12 @@ export default function Footer() {
     <footer className="footer">
       <div className="footer__container">
         <div className="footer__content">
-          <p className="footer__text">
-            © 2024 {t('app.title')}. Alle rechten voorbehouden.
-          </p>
+          <div className="footer__text-block">
+            <p className="footer__text">
+              © 2024 {t('app.title')}. Alle rechten voorbehouden.
+            </p>
+            <p className="footer__powered">Powered by: Levens, A. for BST</p>
+          </div>
           <div className="footer__links">
             <a href="#" className="footer__link">Privacy</a>
             <a href="#" className="footer__link">Voorwaarden</a>

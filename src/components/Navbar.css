@@ -116,9 +116,115 @@
   font-size: 0.9rem;
 }
 
+.navbar__right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .navbar__user {
   display: flex;
   align-items: center;
+}
+
+/* Admin dropdown */
+.navbar__admin-wrap {
+  position: relative;
+}
+
+.navbar__admin-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  color: #ccc;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.navbar__admin-btn:hover {
+  background-color: #333;
+  color: #fff;
+}
+
+.navbar__admin-btn--open {
+  background-color: #333;
+  color: #fff;
+}
+
+.navbar__admin-btn--active {
+  background-color: #0066cc;
+  color: #fff;
+}
+
+.navbar__admin-btn--active:hover {
+  background-color: #0052a3;
+  color: #fff;
+}
+
+.navbar__admin-chevron {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.2s ease;
+}
+
+.navbar__admin-btn--open .navbar__admin-chevron {
+  transform: rotate(180deg);
+}
+
+.navbar__admin-text {
+  font-size: 0.9rem;
+}
+
+.navbar__admin-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.25rem;
+  min-width: 220px;
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 1001;
+  overflow: hidden;
+}
+
+.navbar__admin-dropdown-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  color: #ccc;
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: background-color 0.2s ease;
+}
+
+.navbar__admin-dropdown-link:hover {
+  background-color: #333;
+  color: #fff;
+}
+
+.navbar__admin-dropdown-link--active {
+  background-color: rgba(0, 102, 204, 0.2);
+  color: #6eb3f7;
+}
+
+.navbar__admin-dropdown-link--active:hover {
+  background-color: #0066cc;
+  color: #fff;
+}
+
+.navbar__admin-dropdown-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
 }
 
 .navbar__user-info {
@@ -128,6 +234,16 @@
 }
 
 .navbar__user-email {
+  color: #ccc;
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.navbar__user-email:hover {
+  color: #fff;
+}
+
+.navbar__user-name {
   color: #ccc;
   font-size: 0.9rem;
 }
@@ -255,8 +371,12 @@
     display: none;
   }
 
-  .navbar__user {
+  .navbar__right {
     margin-left: auto;
+  }
+
+  .navbar__admin-text {
+    display: none;
   }
 }
 

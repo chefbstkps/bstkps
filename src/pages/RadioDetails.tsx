@@ -2,23 +2,28 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useLanguage } from '../contexts/LanguageContext'
+import { useAuth } from '../contexts/AuthContext'
 import { RadioService } from '../services/radioService'
 import { InventoryService } from '../services/inventoryService'
 import { AccessoryService } from '../services/accessoryService'
 import { OrganizationService } from '../services/organizationService'
-import { type InventoryIssueFormData } from '../types'
-import { ArrowLeft, Edit, Trash2, Battery, Wrench, Building, Tag, Hash, Upload, Car } from 'lucide-react'
+import { type InventoryIssueFormData, type Radio } from '../types'
+import { ArrowLeft, Edit, Trash2, Battery, Wrench, Building, Tag, Hash, Upload, Car, Package, RotateCcw, UserPlus } from 'lucide-react'
 import './RadioDetails.css'
 
 export default function RadioDetails() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { t } = useLanguage()
+  const { isSuperUserOrAdmin, user } = useAuth()
   const queryClient = useQueryClient()
 
   // Modal state management
   const [showBatteryModal, setShowBatteryModal] = useState(false)
   const [showServiceModal, setShowServiceModal] = useState(false)
+  const [showInleveringModal, setShowInleveringModal] = useState(false)
+  const [showRetourModal, setShowRetourModal] = useState(false)
+  const [showToewijzingModal, setShowToewijzingModal] = useState(false)
   const [showIdModal, setShowIdModal] = useState(false)
   const [showAliasModal, setShowAliasModal] = useState(false)
   const [showDepartmentModal, setShowDepartmentModal] = useState(false)
@@ -38,20 +43,23 @@ export default function RadioDetails() {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => RadioService.delete(id),
+    mutationFn: (id: string) => RadioService.delete(id, user?.username),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['radios'] })
+      queryClient.invalidateQueries({ queryKey: ['radios-archive'] })
       navigate('/radios')
     },
   })
 
   const addHistoryMutation = useMutation({
-    mutationFn: ({ action, description, details }: { action: string; description: string; details?: any }) =>
-      RadioService.addHistoryEntry(id!, action, description, details),
+    mutationFn: ({ action, description, details, executed_by }: { action: string; description: string; details?: any; executed_by?: string | null }) =>
+      RadioService.addHistoryEntry(id!, action, description, details, executed_by),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['radio-history', id] })
     },
   })
+
+  const executedBy = user?.username ?? 'Admin'
 
   const handleDelete = () => {
     setShowDeleteModal(true)
@@ -71,6 +79,18 @@ export default function RadioDetails() {
 
   const handleService = () => {
     setShowServiceModal(true)
+  }
+
+  const handleInlevering = () => {
+    setShowInleveringModal(true)
+  }
+
+  const handleRetour = () => {
+    setShowRetourModal(true)
+  }
+
+  const handleToewijzing = () => {
+    setShowToewijzingModal(true)
   }
 
   const handleDepartmentChange = () => {
@@ -101,6 +121,12 @@ export default function RadioDetails() {
         return <Upload size={16} />
       case 'installed':
         return <Car size={16} />
+      case 'inlevering':
+        return <Package size={16} />
+      case 'retour':
+        return <RotateCcw size={16} />
+      case 'toewijzing':
+        return <UserPlus size={16} />
       default:
         return <Edit size={16} />
     }
@@ -122,6 +148,12 @@ export default function RadioDetails() {
         return 'Afgegeven'
       case 'installed':
         return 'Geïnstalleerd'
+      case 'inlevering':
+        return 'Ingeleverd'
+      case 'retour':
+        return 'Retour'
+      case 'toewijzing':
+        return 'Toewijzing'
       default:
         return 'Gewijzigd'
     }
@@ -158,6 +190,7 @@ export default function RadioDetails() {
           Terug
         </button>
         <h1 className="page__title">Radio Details</h1>
+        {isSuperUserOrAdmin() && (
         <div className="page__actions">
           <button
             onClick={handleDelete}
@@ -168,6 +201,7 @@ export default function RadioDetails() {
             {t('common.delete')}
           </button>
         </div>
+        )}
       </div>
 
       <div className="radio-details">
@@ -182,6 +216,7 @@ export default function RadioDetails() {
                   <label className="info-label">ID</label>
                   <div className="info-value">
                     {radio.id}
+                    {isSuperUserOrAdmin() && (
                     <button
                       onClick={handleIdChange}
                       className="btn btn--icon btn--secondary"
@@ -189,6 +224,7 @@ export default function RadioDetails() {
                     >
                       <Edit size={16} />
                     </button>
+                    )}
                   </div>
                 </div>
                 <div className="info-item">
@@ -215,6 +251,7 @@ export default function RadioDetails() {
                   <label className="info-label">Alias</label>
                   <div className="info-value">
                     {radio.alias}
+                    {isSuperUserOrAdmin() && (
                     <button
                       onClick={handleAliasChange}
                       className="btn btn--icon btn--secondary"
@@ -222,12 +259,14 @@ export default function RadioDetails() {
                     >
                       <Edit size={16} />
                     </button>
+                    )}
                   </div>
                 </div>
                 <div className="info-item">
                   <label className="info-label">Afdeling</label>
                   <div className="info-value">
                     {radio.afdeling}
+                    {isSuperUserOrAdmin() && (
                     <button
                       onClick={handleDepartmentChange}
                       className="btn btn--icon btn--secondary"
@@ -235,6 +274,7 @@ export default function RadioDetails() {
                     >
                       <Edit size={16} />
                     </button>
+                    )}
                   </div>
                 </div>
                 <div className="info-item">
@@ -269,11 +309,16 @@ export default function RadioDetails() {
                   <label className="info-label">Opmerking</label>
                   <div className="info-value">{radio.opmerking || '-'}</div>
                 </div>
+                <div className="info-item">
+                  <label className="info-label">Toegevoegd door</label>
+                  <div className="info-value">{radio.added_by ?? '-'}</div>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
+        {isSuperUserOrAdmin() && (
         <div className="radio-details__actions">
           <div className="card">
             <div className="card__header">
@@ -297,10 +342,36 @@ export default function RadioDetails() {
                   <Wrench size={20} />
                   Service
                 </button>
+                <button
+                  onClick={handleInlevering}
+                  className="btn btn--secondary"
+                  disabled={addHistoryMutation.isPending}
+                >
+                  <Package size={20} />
+                  Inlevering
+                </button>
+                <button
+                  onClick={handleRetour}
+                  className="btn btn--secondary"
+                  disabled={addHistoryMutation.isPending || radio?.status === 'Actief'}
+                  title={radio?.status === 'Actief' ? 'Retour is alleen mogelijk als de status niet Actief is' : undefined}
+                >
+                  <RotateCcw size={20} />
+                  Retour
+                </button>
+                <button
+                  onClick={handleToewijzing}
+                  className="btn btn--secondary"
+                  disabled={addHistoryMutation.isPending}
+                >
+                  <UserPlus size={20} />
+                  Toewijzing
+                </button>
               </div>
             </div>
           </div>
         </div>
+        )}
       </div>
 
       <div className="radio-history">
@@ -385,11 +456,53 @@ export default function RadioDetails() {
                               Voertuig: <strong>{entry.details.vehicle_info.merk} {entry.details.vehicle_info.model}</strong>
                             </span>
                           )}
+                          {entry.details.reden_van_inlevering && (
+                            <span className="detail-item">
+                              Reden: <strong>{entry.details.reden_van_inlevering}</strong>
+                            </span>
+                          )}
+                          {entry.details.reden && (
+                            <span className="detail-item">
+                              Reden: <strong>{entry.details.reden}</strong>
+                            </span>
+                          )}
+                          {entry.details.reden_van_toewijzing && (
+                            <span className="detail-item">
+                              Reden: <strong>{entry.details.reden_van_toewijzing}</strong>
+                            </span>
+                          )}
+                          {'previous_afdeling' in entry.details && entry.details.previous_afdeling != null && entry.details.previous_afdeling !== '' && (
+                            <span className="detail-item">
+                              Vorige afdeling: <strong>{String(entry.details.previous_afdeling)}</strong>
+                            </span>
+                          )}
+                          {'previous_groep' in entry.details && entry.details.previous_groep != null && entry.details.previous_groep !== '' && (
+                            <span className="detail-item">
+                              Vorige organisatie: <strong>{String(entry.details.previous_groep)}</strong>
+                            </span>
+                          )}
+                          {'previous_structuur' in entry.details && entry.details.previous_structuur != null && entry.details.previous_structuur !== '' && (
+                            <span className="detail-item">
+                              Vorige structuur: <strong>{String(entry.details.previous_structuur)}</strong>
+                            </span>
+                          )}
+                          {'previous_voertuig' in entry.details && entry.details.previous_voertuig != null && entry.details.previous_voertuig !== '' && (
+                            <span className="detail-item">
+                              Vorige voertuig: <strong>{String(entry.details.previous_voertuig)}</strong>
+                            </span>
+                          )}
                         </div>
                       )}
                     </div>
-                    <div className="history-item__timestamp">
-                      {new Date(entry.timestamp).toLocaleString('nl-NL')}
+                    <div className="history-item__meta">
+                      <span className="history-item__timestamp">
+                        {new Date(entry.timestamp).toLocaleString('nl-NL')}
+                      </span>
+                      {entry.executed_by && (
+                        <span className="history-item__executed-by">
+                          · door {entry.executed_by}
+                        </span>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -488,7 +601,8 @@ export default function RadioDetails() {
                 rang_functie: rangFunctie,
                 accessory_info: accessoryInfo,
                 quantity: quantity
-              }
+              },
+              executed_by: executedBy
             })
 
             // Then automatically register the inventory issue
@@ -535,12 +649,118 @@ export default function RadioDetails() {
                 voornaam: voornaam,
                 telefoonnummer: telefoonnummer,
                 rang_functie: rangFunctie
-              }
+              },
+              executed_by: executedBy
             }, {
               onSuccess: () => {
                 setShowServiceModal(false)
               }
             })
+          }}
+          isLoading={addHistoryMutation.isPending}
+        />
+      )}
+
+      {/* Inlevering Modal */}
+      {showInleveringModal && (
+        <InleveringModal
+          onClose={() => setShowInleveringModal(false)}
+          onSubmit={async (date, notes, naam, voornaam, telefoonnummer, rangFunctie, redenVanInlevering) => {
+            const status = redenVanInlevering as 'Defect' | 'Ingetrokken'
+            await addHistoryMutation.mutateAsync({
+              action: 'inlevering',
+              description: `Radio ingeleverd (${status})`,
+              details: {
+                service_date: date,
+                notes: notes,
+                naam: naam,
+                voornaam: voornaam,
+                telefoonnummer: telefoonnummer,
+                rang_functie: rangFunctie,
+                reden_van_inlevering: status
+              },
+              executed_by: executedBy
+            })
+            await RadioService.update(id!, { status })
+            queryClient.invalidateQueries({ queryKey: ['radio', id] })
+            queryClient.invalidateQueries({ queryKey: ['radios'] })
+            setShowInleveringModal(false)
+          }}
+          isLoading={addHistoryMutation.isPending}
+        />
+      )}
+
+      {/* Retour Modal */}
+      {showRetourModal && (
+        <RetourModal
+          onClose={() => setShowRetourModal(false)}
+          onSubmit={async (date, notes, naam, voornaam, telefoonnummer, rangFunctie) => {
+            await addHistoryMutation.mutateAsync({
+              action: 'retour',
+              description: 'Retour na reparatie',
+              details: {
+                service_date: date,
+                notes: notes,
+                naam: naam,
+                voornaam: voornaam,
+                telefoonnummer: telefoonnummer,
+                rang_functie: rangFunctie,
+                reden: 'Retour na reparatie'
+              },
+              executed_by: executedBy
+            })
+            await RadioService.update(id!, { status: 'Actief' })
+            queryClient.invalidateQueries({ queryKey: ['radio', id] })
+            queryClient.invalidateQueries({ queryKey: ['radios'] })
+            setShowRetourModal(false)
+          }}
+          isLoading={addHistoryMutation.isPending}
+        />
+      )}
+
+      {/* Toewijzing Modal */}
+      {showToewijzingModal && radio && (
+        <ToewijzingModal
+          radio={radio}
+          onClose={() => setShowToewijzingModal(false)}
+          onSubmit={async (data) => {
+            await addHistoryMutation.mutateAsync({
+              action: 'toewijzing',
+              description: `Toewijzing: ${data.redenVanToewijzing}`,
+              details: {
+                service_date: data.date,
+                reden_van_toewijzing: data.redenVanToewijzing,
+                previous_afdeling: radio.afdeling,
+                previous_groep: radio.groep ?? '',
+                previous_structuur: radio.structuur ?? '',
+                ...(radio.type === 'Mobile' && { previous_voertuig: radio.voertuig ?? '' }),
+                alias: data.alias,
+                afdeling: data.afdeling,
+                groep: data.groep,
+                structuur: data.structuur,
+                voertuig: data.voertuig,
+                naam: data.naam,
+                voornaam: data.voornaam,
+                telefoonnummer: data.telefoonnummer,
+                rang_functie: data.rangFunctie,
+                notes: data.notes
+              },
+              executed_by: executedBy
+            })
+            const updatePayload: Parameters<typeof RadioService.update>[1] = {
+              alias: data.alias,
+              afdeling: data.afdeling,
+              groep: data.groep,
+              structuur: data.structuur,
+              status: 'Actief'
+            }
+            if (radio.type === 'Mobile') {
+              updatePayload.voertuig = data.voertuig ?? ''
+            }
+            await RadioService.update(id!, updatePayload)
+            queryClient.invalidateQueries({ queryKey: ['radio', id] })
+            queryClient.invalidateQueries({ queryKey: ['radios'] })
+            setShowToewijzingModal(false)
           }}
           isLoading={addHistoryMutation.isPending}
         />
@@ -564,7 +784,8 @@ export default function RadioDetails() {
                   new_value: newId,
                   service_date: date,
                   notes: notes
-                }
+                },
+                executed_by: executedBy
               })
               
               // Invalidate radio query to refresh the data
@@ -602,7 +823,8 @@ export default function RadioDetails() {
                   new_value: newAlias,
                   service_date: date,
                   notes: notes
-                }
+                },
+                executed_by: executedBy
               })
               
               // Invalidate radio query to refresh the data
@@ -637,7 +859,8 @@ export default function RadioDetails() {
                   new_value: newDepartment,
                   service_date: date,
                   notes: notes
-                }
+                },
+                executed_by: executedBy
               })
               
               // Invalidate radio query to refresh the data
@@ -760,6 +983,7 @@ function BatteryReplacementModal({
                     required
                   />
                 </div>
+                <div className="service-modal__group" />
               </div>
 
               <div className="service-modal__grid">
@@ -831,6 +1055,7 @@ function BatteryReplacementModal({
                     required
                   />
                 </div>
+                <div className="service-modal__group" />
               </div>
 
               <div className="service-modal__grid">
@@ -958,6 +1183,7 @@ function ServiceModal({
                     required
                   />
                 </div>
+                <div className="service-modal__group" />
               </div>
 
               <div className="service-modal__grid">
@@ -1033,6 +1259,585 @@ function ServiceModal({
                 disabled={isLoading}
               >
                 {isLoading ? 'Bezig met opslaan...' : 'Service Registreren'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Retour Modal Component (same fields as Service; saves "Reden: Retour na reparatie", sets status to Actief)
+function RetourModal({
+  onClose,
+  onSubmit,
+  isLoading = false
+}: {
+  onClose: () => void
+  onSubmit: (date: string, notes: string, naam: string, voornaam: string, telefoonnummer: string, rangFunctie: string) => void
+  isLoading?: boolean
+}) {
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0])
+  const [notes, setNotes] = useState('')
+  const [naam, setNaam] = useState('')
+  const [voornaam, setVoornaam] = useState('')
+  const [telefoonnummer, setTelefoonnummer] = useState('')
+  const [rangFunctie, setRangFunctie] = useState('')
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    onSubmit(date, notes, naam, voornaam, telefoonnummer, rangFunctie)
+  }
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal">
+        <div className="modal__header">
+          <h2>Retour</h2>
+          <button onClick={onClose} className="modal__close">×</button>
+        </div>
+        <div className="service-modal__wrapper">
+          <form onSubmit={handleSubmit} className="service-modal__form">
+            <div className="service-modal__content">
+              <div className="service-modal__grid">
+                <div className="service-modal__group">
+                  <label className="service-modal__label">Datum van retour *</label>
+                  <input
+                    type="date"
+                    className="service-modal__input"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="service-modal__group" />
+              </div>
+
+              <div className="service-modal__grid">
+                <div className="service-modal__group">
+                  <label className="service-modal__label">Naam</label>
+                  <input
+                    type="text"
+                    className="service-modal__input"
+                    value={naam}
+                    onChange={(e) => setNaam(e.target.value)}
+                    placeholder="Achternaam"
+                  />
+                </div>
+                <div className="service-modal__group">
+                  <label className="service-modal__label">Voornaam</label>
+                  <input
+                    type="text"
+                    className="service-modal__input"
+                    value={voornaam}
+                    onChange={(e) => setVoornaam(e.target.value)}
+                    placeholder="Voornaam"
+                  />
+                </div>
+              </div>
+
+              <div className="service-modal__grid">
+                <div className="service-modal__group">
+                  <label className="service-modal__label">Telefoonnummer</label>
+                  <input
+                    type="tel"
+                    className="service-modal__input"
+                    value={telefoonnummer}
+                    onChange={(e) => setTelefoonnummer(e.target.value)}
+                    placeholder="Telefoonnummer"
+                  />
+                </div>
+                <div className="service-modal__group">
+                  <label className="service-modal__label">Rang/Functie</label>
+                  <input
+                    type="text"
+                    className="service-modal__input"
+                    value={rangFunctie}
+                    onChange={(e) => setRangFunctie(e.target.value)}
+                    placeholder="Rang of functie"
+                  />
+                </div>
+              </div>
+
+              <div className="service-modal__group service-modal__group--full">
+                <label className="service-modal__label">Opmerkingen</label>
+                <textarea
+                  className="service-modal__textarea"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Optionele opmerkingen over de retour..."
+                  rows={3}
+                />
+              </div>
+            </div>
+
+            <div className="service-modal__actions">
+              <button
+                type="button"
+                onClick={onClose}
+                className="btn btn--secondary"
+                disabled={isLoading}
+              >
+                Annuleren
+              </button>
+              <button
+                type="submit"
+                className="btn btn--primary"
+                disabled={isLoading}
+              >
+                {isLoading ? 'Bezig met opslaan...' : 'Retour Registreren'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Toewijzing Modal: reden, alias, organisatie/structuur/afdeling (dropdowns), voertuig if Mobile, naam/voornaam/telefoon/rang/opmerkingen
+function ToewijzingModal({
+  radio,
+  onClose,
+  onSubmit,
+  isLoading = false
+}: {
+  radio: Radio
+  onClose: () => void
+  onSubmit: (data: {
+    date: string
+    redenVanToewijzing: string
+    alias: string
+    groep: string
+    structuur: string
+    afdeling: string
+    voertuig?: string
+    naam: string
+    voornaam: string
+    telefoonnummer: string
+    rangFunctie: string
+    notes: string
+  }) => void
+  isLoading?: boolean
+}) {
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0])
+  const [redenVanToewijzing, setRedenVanToewijzing] = useState('')
+  const [alias, setAlias] = useState(radio.alias || '')
+  const [groep, setGroep] = useState(radio.groep || '')
+  const [structuur, setStructuur] = useState(radio.structuur || '')
+  const [afdeling, setAfdeling] = useState(radio.afdeling || '')
+  const [voertuig, setVoertuig] = useState(radio.voertuig || '')
+  const [naam, setNaam] = useState('')
+  const [voornaam, setVoornaam] = useState('')
+  const [telefoonnummer, setTelefoonnummer] = useState('')
+  const [rangFunctie, setRangFunctie] = useState('')
+  const [notes, setNotes] = useState('')
+
+  const [groepen, setGroepen] = useState<{ id: string; name: string }[]>([])
+  const [structuren, setStructuren] = useState<{ id: string; name: string }[]>([])
+  const [afdelingen, setAfdelingen] = useState<{ id: string; name: string }[]>([])
+
+  useEffect(() => {
+    setAlias(radio.alias || '')
+    setGroep(radio.groep || '')
+    setStructuur(radio.structuur || '')
+    setAfdeling(radio.afdeling || '')
+    setVoertuig(radio.voertuig || '')
+  }, [radio])
+
+  useEffect(() => {
+    OrganizationService.getAllGroepen().then(setGroepen).catch(console.error)
+  }, [])
+
+  useEffect(() => {
+    if (!groep) {
+      setStructuren([])
+      setStructuur('')
+      setAfdeling('')
+      return
+    }
+    const selectedGroep = groepen.find(g => g.name === groep)
+    if (selectedGroep) {
+      OrganizationService.getStructurenByGroep(selectedGroep.id)
+        .then(setStructuren)
+        .catch(console.error)
+    } else {
+      setStructuren([])
+    }
+  }, [groep, groepen])
+
+  useEffect(() => {
+    if (!structuur) {
+      setAfdelingen([])
+      setAfdeling('')
+      return
+    }
+    const selectedStructuur = structuren.find(s => s.name === structuur)
+    if (selectedStructuur) {
+      OrganizationService.getAfdelingenByStructuur(selectedStructuur.id)
+        .then(setAfdelingen)
+        .catch(console.error)
+    } else {
+      setAfdelingen([])
+    }
+  }, [structuur, structuren])
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (redenVanToewijzing && afdeling) {
+      onSubmit({
+        date,
+        redenVanToewijzing,
+        alias,
+        groep,
+        structuur,
+        afdeling,
+        voertuig: radio.type === 'Mobile' ? voertuig : undefined,
+        naam,
+        voornaam,
+        telefoonnummer,
+        rangFunctie,
+        notes
+      })
+    }
+  }
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal">
+        <div className="modal__header">
+          <h2>Toewijzing</h2>
+          <button onClick={onClose} className="modal__close">×</button>
+        </div>
+        <div className="service-modal__wrapper">
+          <form onSubmit={handleSubmit} className="service-modal__form">
+            <div className="service-modal__content">
+              <div className="service-modal__grid">
+                <div className="service-modal__group">
+                  <label className="service-modal__label">Datum van toewijzing *</label>
+                  <input
+                    type="date"
+                    className="service-modal__input"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="service-modal__group">
+                  <label className="service-modal__label">Reden van toewijzing *</label>
+                  <select
+                    className="service-modal__input"
+                    value={redenVanToewijzing}
+                    onChange={(e) => setRedenVanToewijzing(e.target.value)}
+                    required
+                  >
+                    <option value="">Selecteer reden</option>
+                    <option value="Nieuwe radio">Nieuwe radio</option>
+                    <option value="Andere afdeling">Andere afdeling</option>
+                    <option value="Retour na reparatie">Retour na reparatie</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="service-modal__grid">
+                <div className="service-modal__group">
+                  <label className="service-modal__label">Alias *</label>
+                  <input
+                    type="text"
+                    className="service-modal__input"
+                    value={alias}
+                    onChange={(e) => setAlias(e.target.value)}
+                    required
+                    placeholder="Bijv. Recherche-02"
+                  />
+                </div>
+                <div className="service-modal__group">
+                  <label className="service-modal__label">Organisatie</label>
+                  <select
+                    className="service-modal__input"
+                    value={groep}
+                    onChange={(e) => {
+                      setGroep(e.target.value)
+                      setStructuur('')
+                      setAfdeling('')
+                    }}
+                  >
+                    <option value="">Selecteer organisatie</option>
+                    {groepen.map(g => (
+                      <option key={g.id} value={g.name}>{g.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="service-modal__grid">
+                <div className="service-modal__group">
+                  <label className="service-modal__label">Structuur</label>
+                  <select
+                    className="service-modal__input"
+                    value={structuur}
+                    onChange={(e) => {
+                      setStructuur(e.target.value)
+                      setAfdeling('')
+                    }}
+                    disabled={!groep}
+                  >
+                    <option value="">Selecteer structuur</option>
+                    {structuren.map(s => (
+                      <option key={s.id} value={s.name}>{s.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="service-modal__group">
+                  <label className="service-modal__label">Afdeling *</label>
+                  <select
+                    className="service-modal__input"
+                    value={afdeling}
+                    onChange={(e) => setAfdeling(e.target.value)}
+                    disabled={!structuur}
+                    required
+                  >
+                    <option value="">Selecteer afdeling</option>
+                    {afdelingen.map(a => (
+                      <option key={a.id} value={a.name}>{a.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {radio.type === 'Mobile' && (
+                <div className="service-modal__grid">
+                  <div className="service-modal__group">
+                    <label className="service-modal__label">Voertuig</label>
+                    <input
+                      type="text"
+                      className="service-modal__input"
+                      value={voertuig}
+                      onChange={(e) => setVoertuig(e.target.value)}
+                      placeholder="Bijv. Isuzu D-max - 12-34 HV"
+                    />
+                  </div>
+                  <div className="service-modal__group" />
+                </div>
+              )}
+
+              <div className="service-modal__grid">
+                <div className="service-modal__group">
+                  <label className="service-modal__label">Naam</label>
+                  <input
+                    type="text"
+                    className="service-modal__input"
+                    value={naam}
+                    onChange={(e) => setNaam(e.target.value)}
+                    placeholder="Achternaam"
+                  />
+                </div>
+                <div className="service-modal__group">
+                  <label className="service-modal__label">Voornaam</label>
+                  <input
+                    type="text"
+                    className="service-modal__input"
+                    value={voornaam}
+                    onChange={(e) => setVoornaam(e.target.value)}
+                    placeholder="Voornaam"
+                  />
+                </div>
+              </div>
+
+              <div className="service-modal__grid">
+                <div className="service-modal__group">
+                  <label className="service-modal__label">Telefoonnummer</label>
+                  <input
+                    type="tel"
+                    className="service-modal__input"
+                    value={telefoonnummer}
+                    onChange={(e) => setTelefoonnummer(e.target.value)}
+                    placeholder="Telefoonnummer"
+                  />
+                </div>
+                <div className="service-modal__group">
+                  <label className="service-modal__label">Rang/Functie</label>
+                  <input
+                    type="text"
+                    className="service-modal__input"
+                    value={rangFunctie}
+                    onChange={(e) => setRangFunctie(e.target.value)}
+                    placeholder="Rang of functie"
+                  />
+                </div>
+              </div>
+
+              <div className="service-modal__group service-modal__group--full">
+                <label className="service-modal__label">Opmerkingen</label>
+                <textarea
+                  className="service-modal__textarea"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Optionele opmerkingen..."
+                  rows={3}
+                />
+              </div>
+            </div>
+
+            <div className="service-modal__actions">
+              <button
+                type="button"
+                onClick={onClose}
+                className="btn btn--secondary"
+                disabled={isLoading}
+              >
+                Annuleren
+              </button>
+              <button
+                type="submit"
+                className="btn btn--primary"
+                disabled={isLoading || !redenVanToewijzing || !afdeling}
+              >
+                {isLoading ? 'Bezig met opslaan...' : 'Toewijzing Registreren'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Inlevering Modal Component (same fields as Service + Reden van inlevering dropdown)
+function InleveringModal({
+  onClose,
+  onSubmit,
+  isLoading = false
+}: {
+  onClose: () => void
+  onSubmit: (date: string, notes: string, naam: string, voornaam: string, telefoonnummer: string, rangFunctie: string, redenVanInlevering: 'Defect' | 'Ingetrokken') => void
+  isLoading?: boolean
+}) {
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0])
+  const [notes, setNotes] = useState('')
+  const [naam, setNaam] = useState('')
+  const [voornaam, setVoornaam] = useState('')
+  const [telefoonnummer, setTelefoonnummer] = useState('')
+  const [rangFunctie, setRangFunctie] = useState('')
+  const [redenVanInlevering, setRedenVanInlevering] = useState<'Defect' | 'Ingetrokken' | ''>('')
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (redenVanInlevering) {
+      onSubmit(date, notes, naam, voornaam, telefoonnummer, rangFunctie, redenVanInlevering)
+    }
+  }
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal">
+        <div className="modal__header">
+          <h2>Inlevering</h2>
+          <button onClick={onClose} className="modal__close">×</button>
+        </div>
+        <div className="service-modal__wrapper">
+          <form onSubmit={handleSubmit} className="service-modal__form">
+            <div className="service-modal__content">
+              <div className="service-modal__grid">
+                <div className="service-modal__group">
+                  <label className="service-modal__label">Datum van inlevering *</label>
+                  <input
+                    type="date"
+                    className="service-modal__input"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="service-modal__group">
+                  <label className="service-modal__label">Reden van inlevering *</label>
+                  <select
+                    className="service-modal__input"
+                    value={redenVanInlevering}
+                    onChange={(e) => setRedenVanInlevering(e.target.value as 'Defect' | 'Ingetrokken' | '')}
+                    required
+                  >
+                    <option value="">Selecteer reden</option>
+                    <option value="Defect">Defect</option>
+                    <option value="Ingetrokken">Ingetrokken</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="service-modal__grid">
+                <div className="service-modal__group">
+                  <label className="service-modal__label">Naam</label>
+                  <input
+                    type="text"
+                    className="service-modal__input"
+                    value={naam}
+                    onChange={(e) => setNaam(e.target.value)}
+                    placeholder="Achternaam"
+                  />
+                </div>
+                <div className="service-modal__group">
+                  <label className="service-modal__label">Voornaam</label>
+                  <input
+                    type="text"
+                    className="service-modal__input"
+                    value={voornaam}
+                    onChange={(e) => setVoornaam(e.target.value)}
+                    placeholder="Voornaam"
+                  />
+                </div>
+              </div>
+
+              <div className="service-modal__grid">
+                <div className="service-modal__group">
+                  <label className="service-modal__label">Telefoonnummer</label>
+                  <input
+                    type="tel"
+                    className="service-modal__input"
+                    value={telefoonnummer}
+                    onChange={(e) => setTelefoonnummer(e.target.value)}
+                    placeholder="Telefoonnummer"
+                  />
+                </div>
+                <div className="service-modal__group">
+                  <label className="service-modal__label">Rang/Functie</label>
+                  <input
+                    type="text"
+                    className="service-modal__input"
+                    value={rangFunctie}
+                    onChange={(e) => setRangFunctie(e.target.value)}
+                    placeholder="Rang of functie"
+                  />
+                </div>
+              </div>
+
+              <div className="service-modal__group service-modal__group--full">
+                <label className="service-modal__label">Opmerkingen</label>
+                <textarea
+                  className="service-modal__textarea"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Optionele opmerkingen over de inlevering..."
+                  rows={3}
+                />
+              </div>
+            </div>
+
+            <div className="service-modal__actions">
+              <button
+                type="button"
+                onClick={onClose}
+                className="btn btn--secondary"
+                disabled={isLoading}
+              >
+                Annuleren
+              </button>
+              <button
+                type="submit"
+                className="btn btn--primary"
+                disabled={isLoading || !redenVanInlevering}
+              >
+                {isLoading ? 'Bezig met opslaan...' : 'Inlevering Registreren'}
               </button>
             </div>
           </form>

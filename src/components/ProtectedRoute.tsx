@@ -8,9 +8,9 @@ interface ProtectedRouteProps {
 }
 
 export default function ProtectedRoute({ children, requireAdmin = false }: ProtectedRouteProps) {
-  const { isAuthenticated, isAdmin, isLoading } = useAuth()
+  const { isAuthenticated, isAdmin, loading } = useAuth()
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="loading-container">
         <div className="loading-spinner"></div>
@@ -20,7 +20,7 @@ export default function ProtectedRoute({ children, requireAdmin = false }: Prote
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/" replace />
+    return <Navigate to="/login" replace />
   }
 
   if (requireAdmin && !isAdmin()) {

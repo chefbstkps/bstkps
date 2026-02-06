@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { useLanguage } from '../contexts/LanguageContext'
+import { useAuth } from '../contexts/AuthContext'
 import { BrandService } from '../services/brandService'
 import { Brand, Category, Model, BrandFormData, CategoryFormData, ModelFormData } from '../types'
 import { Plus, Edit, Trash2, ChevronRight, ChevronDown } from 'lucide-react'
@@ -8,6 +9,7 @@ import './Brands.css'
 
 export default function Brands() {
   const { t } = useLanguage()
+  const { isSuperUserOrAdmin } = useAuth()
   const [expandedBrands, setExpandedBrands] = useState<Set<string>>(new Set())
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
   const [showBrandModal, setShowBrandModal] = useState(false)
@@ -107,6 +109,7 @@ export default function Brands() {
           <h1>{t('brands.title')}</h1>
           <p>{t('brands.subtitle')}</p>
         </div>
+        {isSuperUserOrAdmin() && (
         <button
           onClick={() => setShowBrandModal(true)}
           className="btn btn--primary"
@@ -114,6 +117,7 @@ export default function Brands() {
           <Plus size={20} />
           {t('brands.addBrand')}
         </button>
+        )}
       </div>
 
       {/* Stats Cards */}
@@ -145,6 +149,7 @@ export default function Brands() {
             <BrandItem
               key={brand.id}
               brand={brand}
+              canEdit={isSuperUserOrAdmin()}
               isExpanded={expandedBrands.has(brand.id)}
               onToggle={handleToggleBrand}
               onEdit={() => {
@@ -214,6 +219,7 @@ export default function Brands() {
 // Brand Item Component
 function BrandItem({ 
   brand, 
+  canEdit,
   isExpanded, 
   onToggle, 
   onEdit, 
@@ -230,6 +236,7 @@ function BrandItem({
   isDeleting
 }: {
   brand: Brand
+  canEdit: boolean
   isExpanded: boolean
   onToggle: (id: string) => void
   onEdit: () => void
@@ -266,6 +273,7 @@ function BrandItem({
           <h3>{brand.name}</h3>
           {brand.description && <p>{brand.description}</p>}
         </div>
+        {canEdit && (
         <div className="brand-item__actions">
           <button
             onClick={onAddCategory}
@@ -290,6 +298,7 @@ function BrandItem({
             <Trash2 size={16} />
           </button>
         </div>
+        )}
       </div>
 
       {isExpanded && (
@@ -298,6 +307,7 @@ function BrandItem({
             <CategoryItem
               key={category.id}
               category={category}
+              canEdit={canEdit}
               isExpanded={expandedCategories.has(category.id)}
               onToggle={onToggleCategory}
               onEdit={onEditCategory}
@@ -321,6 +331,7 @@ function BrandItem({
 // Category Item Component
 function CategoryItem({
   category,
+  canEdit,
   isExpanded,
   onToggle,
   onEdit,
@@ -332,6 +343,7 @@ function CategoryItem({
   isDeleting
 }: {
   category: Category
+  canEdit: boolean
   isExpanded: boolean
   onToggle: (id: string) => void
   onEdit: (category: Category) => void
@@ -363,6 +375,7 @@ function CategoryItem({
           <h4>{category.name}</h4>
           {category.description && <p>{category.description}</p>}
         </div>
+        {canEdit && (
         <div className="category-item__actions">
           <button
             onClick={() => onAddModel(category)}
@@ -387,6 +400,7 @@ function CategoryItem({
             <Trash2 size={14} />
           </button>
         </div>
+        )}
       </div>
 
       {isExpanded && (
@@ -395,6 +409,7 @@ function CategoryItem({
             <ModelItem
               key={model.id}
               model={model}
+              canEdit={canEdit}
               onEdit={onEditModel}
               onDelete={onDeleteModel}
               onShowModal={onShowModelModal}
@@ -410,12 +425,14 @@ function CategoryItem({
 // Model Item Component
 function ModelItem({
   model,
+  canEdit,
   onEdit,
   onDelete,
   onShowModal,
   isDeleting
 }: {
   model: Model
+  canEdit: boolean
   onEdit: (model: Model) => void
   onDelete: (model: Model) => void
   onShowModal: (show: boolean) => void
@@ -429,6 +446,7 @@ function ModelItem({
         <h5>{model.name}</h5>
         {model.description && <p>{model.description}</p>}
       </div>
+      {canEdit && (
       <div className="model-item__actions">
         <button
           onClick={() => {
@@ -449,6 +467,7 @@ function ModelItem({
           <Trash2 size={12} />
         </button>
       </div>
+      )}
     </div>
   )
 }

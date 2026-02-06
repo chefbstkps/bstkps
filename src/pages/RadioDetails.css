@@ -136,8 +136,22 @@
   color: var(--color-text-primary);
 }
 
-.history-item__timestamp {
+.history-item__meta {
   font-size: 0.8rem;
+  color: var(--color-text-muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+.history-item__timestamp {
+  font-size: inherit;
+}
+
+.history-item__executed-by {
+  color: var(--color-text-muted);
+  font-size: inherit;
 }
 
 /* Status Badge Styles */
@@ -239,7 +253,7 @@
     gap: 0.5rem;
   }
 
-  .history-item__timestamp {
+  .history-item__meta {
     align-self: flex-start;
   }
 

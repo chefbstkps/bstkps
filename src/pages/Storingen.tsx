@@ -3,12 +3,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { Plus, Search, Eye, Trash2, AlertTriangle, Phone, Radio, Siren } from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext'
+import { useAuth } from '../contexts/AuthContext'
 import { storingService } from '../services/storingService'
 import { StoringFormData, StoringWithFeedback } from '../types'
 import './Storingen.css'
 
 export default function Storingen() {
   useLanguage()
+  const { isSuperUserOrAdmin } = useAuth()
   const queryClient = useQueryClient()
   const [showForm, setShowForm] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
@@ -139,6 +141,7 @@ export default function Storingen() {
     <div className="storingen-page">
       <div className="page-header">
         <h1>Storingen</h1>
+        {isSuperUserOrAdmin() && (
         <button
           className="btn btn-primary"
           onClick={() => setShowForm(!showForm)}
@@ -146,6 +149,7 @@ export default function Storingen() {
           <Plus className="btn-icon" />
           Nieuwe Storing
         </button>
+        )}
       </div>
 
       {/* Search and Filters */}
@@ -497,6 +501,7 @@ export default function Storingen() {
                         >
                           <Eye className="btn-icon" />
                         </Link>
+                        {isSuperUserOrAdmin() && (
                         <button
                           onClick={() => handleDelete(storing.id)}
                           className="btn btn-sm btn-danger"
@@ -505,6 +510,7 @@ export default function Storingen() {
                         >
                           <Trash2 className="btn-icon" />
                         </button>
+                        )}
                       </div>
                     </td>
                   </tr>

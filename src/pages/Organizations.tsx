@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useAuth } from '../contexts/AuthContext'
 import { OrganizationService } from '../services/organizationService'
 import { Groep, Structuur, Afdeling, GroepFormData, StructuurFormData, AfdelingFormData } from '../types'
 import { Plus, Edit, Trash2, ChevronRight, ChevronDown, FileSpreadsheet } from 'lucide-react'
@@ -7,6 +8,7 @@ import './Organizations.css'
 
 export default function Organizations() {
   const queryClient = useQueryClient()
+  const { isSuperUserOrAdmin } = useAuth()
   const [expandedGroepen, setExpandedGroepen] = useState<Set<string>>(new Set())
   const [expandedStructuren, setExpandedStructuren] = useState<Set<string>>(new Set())
   const [showGroepModal, setShowGroepModal] = useState(false)
@@ -110,6 +112,7 @@ export default function Organizations() {
           <h1>Organisatie Structuur</h1>
           <p>Beheer groepen, structuren en afdelingen</p>
         </div>
+        {isSuperUserOrAdmin() && (
         <div className="organizations-page__header-actions">
           <button
             onClick={() => setShowCsvModal(true)}
@@ -126,6 +129,7 @@ export default function Organizations() {
             Organisatie Toevoegen
           </button>
         </div>
+        )}
       </div>
 
       {/* Stats Cards */}
@@ -157,6 +161,7 @@ export default function Organizations() {
             <GroepItem
               key={groep.id}
               groep={groep}
+              canEdit={isSuperUserOrAdmin()}
               isExpanded={expandedGroepen.has(groep.id)}
               onToggle={handleToggleGroep}
               onEdit={() => {
@@ -431,6 +436,7 @@ export default function Organizations() {
 // Groep Item Component
 function GroepItem({ 
   groep, 
+  canEdit,
   isExpanded, 
   onToggle, 
   onEdit, 
@@ -447,6 +453,7 @@ function GroepItem({
   isDeleting
 }: {
   groep: Groep
+  canEdit: boolean
   isExpanded: boolean
   onToggle: (id: string) => void
   onEdit: () => void
@@ -481,6 +488,7 @@ function GroepItem({
           <h3>{groep.name}</h3>
           {groep.description && <p>{groep.description}</p>}
         </div>
+        {canEdit && (
         <div className="groep-item__actions">
           <button
             onClick={onAddStructuur}
@@ -505,6 +513,7 @@ function GroepItem({
             <Trash2 size={16} />
           </button>
         </div>
+        )}
       </div>
 
       {isExpanded && (
@@ -513,6 +522,7 @@ function GroepItem({
             <StructuurItem
               key={structuur.id}
               structuur={structuur}
+              canEdit={canEdit}
               isExpanded={expandedStructuren.has(structuur.id)}
               onToggle={onToggleStructuur}
               onEdit={onEditStructuur}
@@ -536,6 +546,7 @@ function GroepItem({
 // Structuur Item Component
 function StructuurItem({
   structuur,
+  canEdit,
   isExpanded,
   onToggle,
   onEdit,
@@ -547,6 +558,7 @@ function StructuurItem({
   isDeleting
 }: {
   structuur: Structuur
+  canEdit: boolean
   isExpanded: boolean
   onToggle: (id: string) => void
   onEdit: (structuur: Structuur) => void
@@ -576,6 +588,7 @@ function StructuurItem({
           <h4>{structuur.name}</h4>
           {structuur.description && <p>{structuur.description}</p>}
         </div>
+        {canEdit && (
         <div className="structuur-item__actions">
           <button
             onClick={() => onAddAfdeling(structuur)}
@@ -600,6 +613,7 @@ function StructuurItem({
             <Trash2 size={14} />
           </button>
         </div>
+        )}
       </div>
 
       {isExpanded && (
@@ -608,6 +622,7 @@ function StructuurItem({
             <AfdelingItem
               key={afdeling.id}
               afdeling={afdeling}
+              canEdit={canEdit}
               onEdit={onEditAfdeling}
               onDelete={onDeleteAfdeling}
               onShowModal={onShowAfdelingModal}
@@ -623,12 +638,14 @@ function StructuurItem({
 // Afdeling Item Component
 function AfdelingItem({
   afdeling,
+  canEdit,
   onEdit,
   onDelete,
   onShowModal,
   isDeleting
 }: {
   afdeling: Afdeling
+  canEdit: boolean
   onEdit: (afdeling: Afdeling) => void
   onDelete: (afdeling: Afdeling) => void
   onShowModal: (show: boolean) => void
@@ -640,6 +657,7 @@ function AfdelingItem({
         <h5>{afdeling.name}</h5>
         {afdeling.description && <p>{afdeling.description}</p>}
       </div>
+      {canEdit && (
       <div className="afdeling-item__actions">
         <button
           onClick={() => {
@@ -660,6 +678,7 @@ function AfdelingItem({
           <Trash2 size={12} />
         </button>
       </div>
+      )}
     </div>
   )
 }

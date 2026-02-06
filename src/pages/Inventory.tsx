@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useLanguage } from '../contexts/LanguageContext'
+import { useAuth } from '../contexts/AuthContext'
 import { InventoryService } from '../services/inventoryService'
 import { AccessoryService } from '../services/accessoryService'
 import { OrganizationService } from '../services/organizationService'
@@ -25,6 +26,7 @@ import './Inventory.css'
 
 export default function InventoryPage() {
   const { t } = useLanguage()
+  const { isSuperUserOrAdmin } = useAuth()
   const queryClient = useQueryClient()
   
   // State
@@ -316,6 +318,7 @@ export default function InventoryPage() {
           </label>
         </div>
 
+        {isSuperUserOrAdmin() && (
         <div className="controls-right">
           <button
             onClick={() => setShowPurchaseModal(true)}
@@ -332,6 +335,7 @@ export default function InventoryPage() {
             Afgifte Registreren
           </button>
         </div>
+        )}
       </div>
 
       {/* Inventory Table */}
@@ -405,13 +409,13 @@ export default function InventoryPage() {
                   <th>Details</th>
                   <th>Prijs</th>
                   <th>Opmerking</th>
-                  <th>Acties</th>
+                  {isSuperUserOrAdmin() && <th>Acties</th>}
                 </tr>
               </thead>
               <tbody>
                 {!transactions || transactions.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="text-center">
+                    <td colSpan={isSuperUserOrAdmin() ? 8 : 7} className="text-center">
                       Geen transacties gevonden
                     </td>
                   </tr>
@@ -460,6 +464,7 @@ export default function InventoryPage() {
                             : '-'}
                         </td>
                         <td>{transaction.notes || '-'}</td>
+                        {isSuperUserOrAdmin() && (
                         <td>
                           <button
                             onClick={() => setDeleteConfirm(transaction.id)}
@@ -469,6 +474,7 @@ export default function InventoryPage() {
                             <X size={16} />
                           </button>
                         </td>
+                        )}
                       </tr>
                     )
                   })

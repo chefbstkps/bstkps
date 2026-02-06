@@ -1,8 +1,11 @@
 .footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
   background-color: #1a1a1a;
   border-top: 1px solid #333;
   margin-top: auto;
-  padding: 2rem 1rem;
+  padding: 0.5rem 1rem;
 }
 
 .footer__container {
@@ -15,24 +18,36 @@
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 0.5rem;
+}
+
+.footer__text-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
 }
 
 .footer__text {
   color: #ccc;
   margin: 0;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
+}
+
+.footer__powered {
+  color: #888;
+  margin: 0;
+  font-size: 0.75rem;
 }
 
 .footer__links {
   display: flex;
-  gap: 1.5rem;
+  gap: 1rem;
 }
 
 .footer__link {
   color: #ccc;
   text-decoration: none;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   transition: color 0.2s ease;
 }
 

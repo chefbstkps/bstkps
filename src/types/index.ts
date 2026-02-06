@@ -1,3 +1,79 @@
+// Auth / App user types (custom login system)
+/** Page keys that can be shown/hidden per user (nav + access). */
+export const USER_PAGE_KEYS = [
+  'storingen',
+  'installation',
+  'issue',
+  'accessories',
+  'inventory',
+  'brands',
+  'organizations',
+  'radio_archive',
+] as const
+
+export type UserPageKey = (typeof USER_PAGE_KEYS)[number]
+
+export type UserPageVisibility = Record<UserPageKey, boolean>
+
+export interface AppUser {
+  id: string
+  username: string
+  email: string
+  first_name: string
+  last_name: string
+  role: 'admin' | 'super_user' | 'user'
+  is_active: boolean
+  must_change_password: boolean
+  last_login?: string
+  created_at: string
+  updated_at: string
+  /** Which pages are visible in nav (admin-configurable). Undefined = all visible. */
+  page_visibility?: UserPageVisibility
+}
+
+export interface LoginCredentials {
+  username: string
+  password: string
+}
+
+export interface CreateUserData {
+  username: string
+  email: string
+  first_name: string
+  last_name: string
+  password: string
+  role: 'admin' | 'super_user' | 'user'
+}
+
+export interface UpdateUserData {
+  first_name?: string
+  last_name?: string
+  email?: string
+  role?: 'admin' | 'super_user' | 'user'
+  is_active?: boolean
+}
+
+export interface ChangePasswordData {
+  current_password: string
+  new_password: string
+  confirm_password: string
+}
+
+export interface ResetPasswordData {
+  user_id: string
+  new_password: string
+}
+
+export interface UserActivityLogEntry {
+  id: string
+  user_id: string
+  username: string
+  activity_type: 'login' | 'logout' | 'password_change' | 'profile_update'
+  success: boolean
+  error_message: string | null
+  created_at: string
+}
+
 // Radio types
 export interface Radio {
   id: string
@@ -15,14 +91,25 @@ export interface Radio {
   registratiedatum: string
   created_at: string
   updated_at: string
+  /** Username of the user who added this radio; 'Admin' for legacy records. */
+  added_by?: string | null
+}
+
+/** Gearchiveerde radio: unieke archive_id, originele radio-velden (id mag duplicaat zijn), archived_at + archived_by. */
+export interface ArchivedRadio extends Radio {
+  archive_id: string
+  archived_at: string
+  archived_by?: string | null
 }
 
 export interface RadioHistory {
   id: string
   radio_id: string
-  action: 'battery_replaced' | 'serviced' | 'department_changed' | 'alias_changed' | 'id_changed' | 'issued' | 'installed'
+  action: 'battery_replaced' | 'serviced' | 'department_changed' | 'alias_changed' | 'id_changed' | 'issued' | 'installed' | 'inlevering' | 'retour' | 'toewijzing'
   description: string
   timestamp: string
+  /** Username of the user who performed this action; 'Admin' for legacy records. */
+  executed_by?: string | null
   details?: {
     old_value?: string
     new_value?: string
@@ -34,6 +121,13 @@ export interface RadioHistory {
     rang_functie?: string
     accessory_info?: string
     quantity?: number
+    reden_van_inlevering?: string
+    reden?: string
+    reden_van_toewijzing?: string
+    previous_afdeling?: string
+    previous_groep?: string
+    previous_structuur?: string
+    previous_voertuig?: string
     vehicle_info?: {
       merk: string
       model: string
@@ -85,10 +179,13 @@ export interface DashboardStats {
   portable_radios: number
   mobile_radios: number
   base_radios: number
+  active_radios: number
+  defect_radios: number
   total_accessories: number
   recent_installations: Installation[]
   recent_issues: Issue[]
   recent_registrations: Radio[]
+  recent_storingen: Storing[]
 }
 
 // Form types
@@ -106,6 +203,8 @@ export interface RadioFormData {
   opmerking?: string
   status: 'Actief' | 'Defect' | 'Kwijtgeraakt' | 'Ingetrokken' | 'Uitgeschakeld' | 'Inactief'
   registratiedatum: string
+  /** Set when creating a radio; username of the user who adds it. */
+  added_by?: string | null
 }
 
 export interface AccessoryFormData {

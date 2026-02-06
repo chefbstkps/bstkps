@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, Edit, Plus, Trash2, CheckCircle, Clock, AlertTriangle, Radio, Phone, Siren } from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext'
+import { useAuth } from '../contexts/AuthContext'
 import { storingService } from '../services/storingService'
 import { StoringFeedbackFormData } from '../types'
 import './FaultDetails.css'
@@ -11,6 +12,7 @@ export default function FaultDetails() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   useLanguage()
+  const { isSuperUserOrAdmin } = useAuth()
   const queryClient = useQueryClient()
   const [showFeedbackForm, setShowFeedbackForm] = useState(false)
   const [editingFeedback, setEditingFeedback] = useState<string | null>(null)
@@ -255,6 +257,7 @@ export default function FaultDetails() {
         <div className="details-section">
           <div className="section-header">
             <h2>Feedback & Afhandeling</h2>
+            {isSuperUserOrAdmin() && (
             <button
               onClick={() => {
                 resetFeedbackForm()
@@ -266,6 +269,7 @@ export default function FaultDetails() {
               <Plus className="btn-icon" />
               Feedback Toevoegen
             </button>
+            )}
           </div>
 
           {/* Feedback Form */}
@@ -395,6 +399,7 @@ export default function FaultDetails() {
                         {feedback.is_afgehandeld && ' - Afgehandeld'}
                       </span>
                     </div>
+                    {isSuperUserOrAdmin() && (
                     <div className="feedback-actions">
                       <button
                         onClick={() => handleEditFeedback(feedback)}
@@ -415,6 +420,7 @@ export default function FaultDetails() {
                         <Trash2 className="btn-icon" />
                       </button>
                     </div>
+                    )}
                   </div>
 
                   <div className="feedback-content">

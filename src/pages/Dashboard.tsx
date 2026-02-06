@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useLanguage } from '../contexts/LanguageContext'
 import { DashboardService } from '../services/dashboardService'
-import { Radio, Package, Upload, Clock, TrendingUp } from 'lucide-react'
+import { Radio, Package, Upload, Clock, TrendingUp, AlertTriangle } from 'lucide-react'
 import './Dashboard.css'
 
 export default function Dashboard() {
@@ -60,6 +60,18 @@ export default function Dashboard() {
       value: stats?.total_accessories || 0,
       icon: Package,
       color: 'var(--color-secondary)'
+    },
+    {
+      label: t('radios.active'),
+      value: stats?.active_radios || 0,
+      icon: Radio,
+      color: 'var(--color-success)'
+    },
+    {
+      label: t('radios.defect'),
+      value: stats?.defect_radios || 0,
+      icon: Radio,
+      color: 'var(--color-danger)'
     }
   ]
 
@@ -92,31 +104,31 @@ export default function Dashboard() {
           <div className="dashboard__card">
             <div className="card__header">
               <h3 className="card__title">
-                <Clock className="card__icon" />
-                Recente Installaties
+                <TrendingUp className="card__icon" />
+                Recente Registraties
               </h3>
             </div>
             <div className="card__body">
-              {stats?.recent_installations && stats.recent_installations.length > 0 ? (
+              {stats?.recent_registrations && stats.recent_registrations.length > 0 ? (
                 <div className="activity-list">
-                  {stats.recent_installations.map((installation) => (
-                    <div key={installation.id} className="activity-item">
+                  {stats.recent_registrations.map((radio) => (
+                    <div key={radio.id} className="activity-item">
                       <div className="activity-item__content">
                         <div className="activity-item__title">
-                          {installation.item_type === 'radio' ? 'Radio' : 'Accessoire'} geïnstalleerd
+                          {radio.merk} {radio.model} - {radio.type}
                         </div>
                         <div className="activity-item__details">
-                          {installation.vehicle_merk} {installation.vehicle_model} - {installation.vehicle_afdeling}
+                          ID: {radio.id} - {radio.afdeling}
                         </div>
                       </div>
                       <div className="activity-item__time">
-                        {new Date(installation.installed_at).toLocaleDateString('nl-NL')}
+                        {new Date(radio.created_at).toLocaleDateString('nl-NL')}
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-muted">Geen recente installaties</p>
+                <p className="text-muted">Geen recente registraties</p>
               )}
             </div>
           </div>
@@ -157,31 +169,63 @@ export default function Dashboard() {
           <div className="dashboard__card">
             <div className="card__header">
               <h3 className="card__title">
-                <TrendingUp className="card__icon" />
-                Recente Registraties
+                <Clock className="card__icon" />
+                Recente Installaties
               </h3>
             </div>
             <div className="card__body">
-              {stats?.recent_registrations && stats.recent_registrations.length > 0 ? (
+              {stats?.recent_installations && stats.recent_installations.length > 0 ? (
                 <div className="activity-list">
-                  {stats.recent_registrations.map((radio) => (
-                    <div key={radio.id} className="activity-item">
+                  {stats.recent_installations.map((installation) => (
+                    <div key={installation.id} className="activity-item">
                       <div className="activity-item__content">
                         <div className="activity-item__title">
-                          {radio.merk} {radio.model} - {radio.type}
+                          {installation.item_type === 'radio' ? 'Radio' : 'Accessoire'} geïnstalleerd
                         </div>
                         <div className="activity-item__details">
-                          ID: {radio.id} - {radio.afdeling}
+                          {installation.vehicle_merk} {installation.vehicle_model} - {installation.vehicle_afdeling}
                         </div>
                       </div>
                       <div className="activity-item__time">
-                        {new Date(radio.created_at).toLocaleDateString('nl-NL')}
+                        {new Date(installation.installed_at).toLocaleDateString('nl-NL')}
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-muted">Geen recente registraties</p>
+                <p className="text-muted">Geen recente installaties</p>
+              )}
+            </div>
+          </div>
+
+          <div className="dashboard__card">
+            <div className="card__header">
+              <h3 className="card__title">
+                <AlertTriangle className="card__icon" />
+                Recente Storingen
+              </h3>
+            </div>
+            <div className="card__body">
+              {stats?.recent_storingen && stats.recent_storingen.length > 0 ? (
+                <div className="activity-list">
+                  {stats.recent_storingen.map((storing) => (
+                    <div key={storing.id} className="activity-item">
+                      <div className="activity-item__content">
+                        <div className="activity-item__title">
+                          {storing.storingnummer} - {storing.soort_storing}
+                        </div>
+                        <div className="activity-item__details">
+                          {storing.betrokken_afdeling} - {storing.aard_storing}
+                        </div>
+                      </div>
+                      <div className="activity-item__time">
+                        {new Date(storing.created_at).toLocaleDateString('nl-NL')}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted">Geen recente storingen</p>
               )}
             </div>
           </div>

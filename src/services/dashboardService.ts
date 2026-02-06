@@ -7,7 +7,7 @@ export class DashboardService {
   static async getStats(): Promise<DashboardStats> {
     try {
       // Get radio stats
-      const radiosResponse = await fetch(`${supabaseUrl}/rest/v1/radios?select=type`, {
+      const radiosResponse = await fetch(`${supabaseUrl}/rest/v1/radios?select=type,status`, {
         headers: {
           'apikey': supabaseAnonKey,
           'Authorization': `Bearer ${supabaseAnonKey}`,
@@ -128,11 +128,28 @@ export class DashboardService {
 
       const recentRegistrations = await registrationsResponse.json()
 
+      // Get recent storingen
+      const storingenResponse = await fetch(`${supabaseUrl}/rest/v1/storingen?select=*&order=created_at.desc&limit=5`, {
+        headers: {
+          'apikey': supabaseAnonKey,
+          'Authorization': `Bearer ${supabaseAnonKey}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (!storingenResponse.ok) {
+        throw new Error(`HTTP error! status: ${storingenResponse.status}`)
+      }
+
+      const recentStoringen = await storingenResponse.json()
+
       const radioStats = {
         total_radios: radios?.length || 0,
         portable_radios: radios?.filter((r: any) => r.type === 'Portable').length || 0,
         mobile_radios: radios?.filter((r: any) => r.type === 'Mobile').length || 0,
         base_radios: radios?.filter((r: any) => r.type === 'Base').length || 0,
+        active_radios: radios?.filter((r: any) => r.status === 'Actief').length || 0,
+        defect_radios: radios?.filter((r: any) => r.status === 'Defect').length || 0,
       }
 
       return {
@@ -141,6 +158,7 @@ export class DashboardService {
         recent_installations: recentInstallations || [],
         recent_issues: recentIssues || [],
         recent_registrations: recentRegistrations || [],
+        recent_storingen: recentStoringen || [],
       }
     } catch (error) {
       console.error('Failed to fetch dashboard stats:', error)

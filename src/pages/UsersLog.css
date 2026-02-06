@@ -1,0 +1,204 @@
+/* Users Activity Log Page */
+.users-log-page {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.users-log-page__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.users-log-page__header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin: 0 0 0.5rem 0;
+}
+
+.users-log-page__header p {
+  color: var(--color-text-muted);
+  margin: 0;
+  font-size: 1rem;
+}
+
+.users-log-page__denied {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.users-log-page__denied h1 {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.users-log-page__denied p {
+  color: var(--color-text-muted);
+}
+
+.users-log-page__spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.users-log-page__stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.users-log-stat {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.users-log-stat__value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.users-log-stat__label {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+.users-log-stat--success .users-log-stat__value {
+  color: var(--color-success);
+}
+
+.users-log-stat--failed .users-log-stat__value {
+  color: var(--color-danger);
+}
+
+.users-log-page__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  align-items: flex-end;
+}
+
+.users-log-page__filter {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.users-log-page__filter-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.users-log-page__filter-select,
+.users-log-page__filter-input {
+  padding: 0.5rem 0.75rem;
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  font-size: 1rem;
+  min-width: 160px;
+}
+
+.users-log-page__filter-input[type="text"] {
+  min-width: 200px;
+}
+
+.users-log-page__filter-select:focus,
+.users-log-page__filter-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.users-log-page__table-wrap {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: auto;
+}
+
+.users-log-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.users-log-table th,
+.users-log-table td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.users-log-table th {
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  background: var(--color-bg-tertiary);
+}
+
+.users-log-table tbody tr:hover {
+  background: var(--color-bg-hover);
+}
+
+.users-log-table__status {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+}
+
+.users-log-table__status--ok {
+  background: rgba(40, 167, 69, 0.2);
+  color: #7dd89a;
+}
+
+.users-log-table__status--fail {
+  background: rgba(220, 53, 69, 0.2);
+  color: #f8a0a0;
+}
+
+.users-log-table__details {
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.users-log-table__empty {
+  text-align: center;
+  padding: 3rem 2rem !important;
+  color: var(--color-text-muted);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+@media (max-width: 768px) {
+  .users-log-page__stats {
+    grid-template-columns: 1fr;
+  }
+}

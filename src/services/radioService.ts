@@ -122,8 +122,46 @@ export class RadioService {
     }
   }
 
-  static async delete(id: string): Promise<void> {
+  static async delete(id: string, archivedBy?: string | null): Promise<void> {
     try {
+      // Archive the radio before deleting (same id/serienummer may be archived multiple times)
+      const radio = await this.getById(id)
+      if (radio) {
+        const archiveResponse = await fetch(`${supabaseUrl}/rest/v1/radios_archive`, {
+          method: 'POST',
+          headers: {
+            'apikey': supabaseAnonKey,
+            'Authorization': `Bearer ${supabaseAnonKey}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=minimal'
+          },
+          body: JSON.stringify({
+            id: radio.id,
+            merk: radio.merk,
+            model: radio.model,
+            type: radio.type,
+            serienummer: radio.serienummer,
+            alias: radio.alias,
+            afdeling: radio.afdeling,
+            groep: radio.groep ?? undefined,
+            structuur: radio.structuur ?? undefined,
+            voertuig: radio.voertuig ?? undefined,
+            opmerking: radio.opmerking ?? undefined,
+            status: radio.status,
+            registratiedatum: radio.registratiedatum,
+            created_at: radio.created_at ?? undefined,
+            updated_at: radio.updated_at ?? undefined,
+            archived_at: new Date().toISOString(),
+            archived_by: archivedBy ?? undefined
+          })
+        })
+        if (!archiveResponse.ok) {
+          const errText = await archiveResponse.text()
+          console.warn('Archive failed (continuing with delete):', errText)
+          // Continue with delete even if archive fails (e.g. table not yet created)
+        }
+      }
+
       const response = await fetch(`${supabaseUrl}/rest/v1/radios?id=eq.${id}`, {
         method: 'DELETE',
         headers: {
@@ -164,7 +202,7 @@ export class RadioService {
     }
   }
 
-  static async addHistoryEntry(radioId: string, action: string, description: string, details?: any): Promise<RadioHistory> {
+  static async addHistoryEntry(radioId: string, action: string, description: string, details?: any, executedBy?: string | null): Promise<RadioHistory> {
     try {
       const response = await fetch(`${supabaseUrl}/rest/v1/radio_history`, {
         method: 'POST',
@@ -179,7 +217,8 @@ export class RadioService {
           action,
           description,
           details,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          ...(executedBy != null && { executed_by: executedBy })
         })
       })
 

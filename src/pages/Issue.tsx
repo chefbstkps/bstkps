@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useLanguage } from '../contexts/LanguageContext'
+import { useAuth } from '../contexts/AuthContext'
 import { IssueService } from '../services/issueService'
 import { RadioService } from '../services/radioService'
 import { AccessoryService } from '../services/accessoryService'
@@ -10,6 +11,7 @@ import './Issue.css'
 
 export default function Issue() {
   const { t } = useLanguage()
+  const { isSuperUserOrAdmin } = useAuth()
   const queryClient = useQueryClient()
   const [searchTerm, setSearchTerm] = useState('')
   const [showAddModal, setShowAddModal] = useState(false)
@@ -96,6 +98,7 @@ export default function Issue() {
 
       {/* Controls */}
       <div className="page__actions">
+        {isSuperUserOrAdmin() && (
         <button
           onClick={() => setShowAddModal(true)}
           className="btn btn--primary"
@@ -103,7 +106,7 @@ export default function Issue() {
           <Plus size={20} />
           Nieuwe Afgifte
         </button>
-        
+        )}
         <div className="search-controls">
           <div className="search-input">
             <Search size={20} />
@@ -128,7 +131,7 @@ export default function Issue() {
               <th>Afdeling</th>
               <th>Datum</th>
               <th>Notities</th>
-              <th>Acties</th>
+              {isSuperUserOrAdmin() && <th>Acties</th>}
             </tr>
           </thead>
           <tbody>
@@ -156,6 +159,7 @@ export default function Issue() {
                   <td>{issue.afdeling}</td>
                   <td>{new Date(issue.issued_at).toLocaleDateString('nl-NL')}</td>
                   <td>{issue.notes || '-'}</td>
+                  {isSuperUserOrAdmin() && (
                   <td>
                     <div className="action-buttons">
                       <button
@@ -174,6 +178,7 @@ export default function Issue() {
                       </button>
                     </div>
                   </td>
+                  )}
                 </tr>
               )
             })}

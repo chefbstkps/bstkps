@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { useLanguage } from '../contexts/LanguageContext'
+import { useAuth } from '../contexts/AuthContext'
 import { RadioService } from '../services/radioService'
 import { BrandService } from '../services/brandService'
 import { OrganizationService } from '../services/organizationService'
@@ -23,6 +24,7 @@ interface ColumnVisibility {
   voertuig: boolean
   opmerking: boolean
   status: boolean
+  added_by: boolean
 }
 
 // Column labels for visibility menu
@@ -38,26 +40,29 @@ const COLUMN_LABELS: Record<keyof ColumnVisibility, string> = {
   afdeling: 'Afdeling',
   voertuig: 'Voertuig',
   opmerking: 'Opmerking',
-  status: 'Status'
+  status: 'Status',
+  added_by: 'Toegevoegd door'
 }
 
 const DEFAULT_COLUMN_VISIBILITY: ColumnVisibility = {
   id: true,
-  merk: false, // Hidden by default
+  merk: false,
   model: true,
   type: true,
   serienummer: true,
-  alias: false, // Hidden by default
-  organisatie: true, // Visible by default - important hierarchical info
-  structuur: true, // Visible by default - important hierarchical info
+  alias: false,
+  organisatie: false,
+  structuur: false,
   afdeling: true,
-  voertuig: true,
-  opmerking: true,
+  voertuig: false,
+  opmerking: false,
   status: true,
+  added_by: false,
 }
 
 export default function Radios() {
   const { t } = useLanguage()
+  const { isSuperUserOrAdmin, user } = useAuth()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [searchTerm, setSearchTerm] = useState('')
@@ -74,6 +79,7 @@ export default function Radios() {
   const [showCsvModal, setShowCsvModal] = useState(false)
   const [selectedRadios, setSelectedRadios] = useState<Set<string>>(new Set())
   const [showColumnMenu, setShowColumnMenu] = useState(false)
+  const columnMenuRef = useRef<HTMLDivElement>(null)
   const [columnVisibility, setColumnVisibility] = useState<ColumnVisibility>(() => {
     // Load from localStorage or use defaults
     const saved = localStorage.getItem('radios-column-visibility')
@@ -110,21 +116,23 @@ export default function Radios() {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => RadioService.delete(id),
+    mutationFn: (id: string) => RadioService.delete(id, user?.username),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['radios'] })
       queryClient.invalidateQueries({ queryKey: ['radio-stats'] })
+      queryClient.invalidateQueries({ queryKey: ['radios-archive'] })
       setDeleteConfirm(null)
     },
   })
 
   const multiDeleteMutation = useMutation({
     mutationFn: async (ids: string[]) => {
-      await Promise.all(ids.map(id => RadioService.delete(id)))
+      await Promise.all(ids.map(id => RadioService.delete(id, user?.username)))
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['radios'] })
       queryClient.invalidateQueries({ queryKey: ['radio-stats'] })
+      queryClient.invalidateQueries({ queryKey: ['radios-archive'] })
       setSelectedRadios(new Set())
     },
   })
@@ -133,6 +141,18 @@ export default function Radios() {
   useEffect(() => {
     localStorage.setItem('radios-column-visibility', JSON.stringify(columnVisibility))
   }, [columnVisibility])
+
+  // Close column menu when clicking outside
+  useEffect(() => {
+    if (!showColumnMenu) return
+    const handleClickOutside = (e: MouseEvent) => {
+      if (columnMenuRef.current && !columnMenuRef.current.contains(e.target as Node)) {
+        setShowColumnMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showColumnMenu])
 
   const toggleColumn = (column: keyof ColumnVisibility) => {
     setColumnVisibility(prev => ({
@@ -295,13 +315,14 @@ export default function Radios() {
         </div>
 
         <div className="radios-page-header-right">
-        <button
+        {isSuperUserOrAdmin() && (
+          <>
+          <button
             onClick={() => setShowCsvModal(true)}
             className="btn-radios-import-export"
           >
             📊 Import/Export
           </button>
-          
           <button
             onClick={() => setShowAddModal(true)}
             className="btn btn--primary"
@@ -309,6 +330,8 @@ export default function Radios() {
             <Plus size={20} />
             {t('radios.add')}
           </button>
+          </>
+        )}
           
           
 
@@ -405,11 +428,9 @@ export default function Radios() {
       </div>
 
       {/* Table */}
-      <div className="table-container">
-        <div style={{ position: 'relative' }}>
-          
-          <div className="radios-show-hide-columns">
-          {selectedRadios.size > 0 && (
+      <div className="radios-table-outer" style={{ position: 'relative' }}>
+        <div className="radios-show-hide-columns">
+          {isSuperUserOrAdmin() && selectedRadios.size > 0 && (
             <button
               onClick={handleMultiDelete}
               className="btn btn--danger"
@@ -419,21 +440,20 @@ export default function Radios() {
               Verwijder {selectedRadios.size} geselecteerd
             </button>
           )}
+          <div ref={columnMenuRef} className="radios-column-menu-wrapper">
             <button
               onClick={() => setShowColumnMenu(!showColumnMenu)}
               className="btn-show-hide-columns"
               title="Kolommen weergeven/verbergen"
             >
               {showColumnMenu ? <EyeOff size={20} /> : <Eye size={20} />}
-                Kolommen
+              Kolommen
             </button>
-          </div>
-
-          {showColumnMenu && (
+            {showColumnMenu && (
               <div className="column-menu">
                 <div className="column-menu__header">
                   <h4>Kolommen weergeven</h4>
-                  <button 
+                  <button
                     onClick={() => setShowColumnMenu(false)}
                     className="column-menu__close"
                   >
@@ -454,10 +474,13 @@ export default function Radios() {
                 </div>
               </div>
             )}
+          </div>
         </div>
+      <div className="table-container">
         <table className="table">
           <thead>
             <tr>
+              {isSuperUserOrAdmin() && (
               <th style={{ width: '40px' }}>
                 <input
                   type="checkbox"
@@ -466,6 +489,7 @@ export default function Radios() {
                   title="Selecteer alles"
                 />
               </th>
+              )}
               {columnVisibility.id && <th>{t('radios.id')}</th>}
               {columnVisibility.merk && <th>{t('radios.merk')}</th>}
               {columnVisibility.model && <th>{t('radios.model')}</th>}
@@ -478,7 +502,8 @@ export default function Radios() {
               {columnVisibility.voertuig && <th>Voertuig</th>}
               {columnVisibility.opmerking && <th>{t('radios.opmerking')}</th>}
               {columnVisibility.status && <th>Status</th>}
-              <th>{t('radios.actions')}</th>
+              {columnVisibility.added_by && <th>Toegevoegd door</th>}
+              {isSuperUserOrAdmin() && <th>{t('radios.actions')}</th>}
             </tr>
           </thead>
           <tbody>
@@ -488,6 +513,7 @@ export default function Radios() {
                 onClick={(e) => handleRowClick(radio, e)} 
                 className={`table-row-clickable ${selectedRadios.has(radio.id) ? 'row-selected' : ''}`}
               >
+                {isSuperUserOrAdmin() && (
                 <td className="row-checkbox" onClick={(e) => e.stopPropagation()}>
                   <input
                     type="checkbox"
@@ -495,6 +521,7 @@ export default function Radios() {
                     onChange={() => toggleSelectRadio(radio.id)}
                   />
                 </td>
+                )}
                 {columnVisibility.id && <td>{radio.id}</td>}
                 {columnVisibility.merk && <td>{radio.merk}</td>}
                 {columnVisibility.model && <td>{radio.model}</td>}
@@ -519,6 +546,8 @@ export default function Radios() {
                     </span>
                   </td>
                 )}
+                {columnVisibility.added_by && <td>{radio.added_by ?? '-'}</td>}
+                {isSuperUserOrAdmin() && (
                 <td>
                   <div className="radios-action-buttons" onClick={(e) => e.stopPropagation()}>
                     <button
@@ -537,6 +566,7 @@ export default function Radios() {
                     </button>
                   </div>
                 </td>
+                )}
               </tr>
             ))}
           </tbody>
@@ -604,6 +634,7 @@ export default function Radios() {
             </div>
           </div>
         )}
+      </div>
       </div>
 
       {/* Add/Edit Modal */}
@@ -798,6 +829,7 @@ function CSVImportExportModal({
   onImportComplete: () => void
   onExport: () => void
 }) {
+  const { user } = useAuth()
   const [dragActive, setDragActive] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [showPreview, setShowPreview] = useState(false)
@@ -948,8 +980,9 @@ function CSVImportExportModal({
     
     setIsImporting(true)
     try {
+      const addedBy = user?.username ?? 'Admin'
       for (const radio of parsedData.valid) {
-        await RadioService.create(radio)
+        await RadioService.create({ ...radio, added_by: addedBy })
       }
       alert(`✅ ${parsedData.valid.length} radio's succesvol geïmporteerd!`)
       onImportComplete()
@@ -1289,6 +1322,7 @@ function CSVImportExportModal({
 // Radio Modal Component
 function RadioModal({ radio, onClose }: { radio: Radio | null; onClose: () => void }) {
   const { t } = useLanguage()
+  const { user } = useAuth()
   const queryClient = useQueryClient()
   const [formData, setFormData] = useState<RadioFormData>({
     id: radio?.id || '',
@@ -1529,7 +1563,8 @@ function RadioModal({ radio, onClose }: { radio: Radio | null; onClose: () => vo
     const selectedBrand = brands.find(b => b.id === formData.merk)
     const submissionData = {
       ...formData,
-      merk: selectedBrand?.name || formData.merk
+      merk: selectedBrand?.name || formData.merk,
+      ...(!radio && { added_by: user?.username ?? 'Admin' })
     }
     
     if (radio) {

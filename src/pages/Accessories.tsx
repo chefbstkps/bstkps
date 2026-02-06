@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useLanguage } from '../contexts/LanguageContext'
+import { useAuth } from '../contexts/AuthContext'
 import { AccessoryService } from '../services/accessoryService'
 import { BrandService } from '../services/brandService'
 import { Accessory, AccessoryFormData, Brand, Model } from '../types'
@@ -9,6 +10,7 @@ import './Accessories.css'
 
 export default function Accessories() {
   const { t } = useLanguage()
+  const { isSuperUserOrAdmin } = useAuth()
   const queryClient = useQueryClient()
   const [searchTerm, setSearchTerm] = useState('')
   const [showAddModal, setShowAddModal] = useState(false)
@@ -95,6 +97,7 @@ export default function Accessories() {
 
       {/* Controls */}
       <div className="page__actions">
+        {isSuperUserOrAdmin() && (
         <button
           onClick={() => setShowAddModal(true)}
           className="btn btn--primary"
@@ -102,7 +105,7 @@ export default function Accessories() {
           <Plus size={20} />
           {t('accessories.add')}
         </button>
-        
+        )}
         <div className="search-controls">
           <div className="search-input">
             <Search size={20} />
@@ -126,7 +129,7 @@ export default function Accessories() {
               <th>Omschrijving</th>
               <th>Serienummer</th>
               <th>Opmerking</th>
-              <th>Acties</th>
+              {isSuperUserOrAdmin() && <th>Acties</th>}
             </tr>
           </thead>
           <tbody>
@@ -137,6 +140,7 @@ export default function Accessories() {
                 <td>{accessory.omschrijving || '-'}</td>
                 <td>{accessory.serienummer || '-'}</td>
                 <td>{accessory.opmerking || '-'}</td>
+                {isSuperUserOrAdmin() && (
                 <td>
                   <div className="accessories-action-buttons">
                     <button
@@ -155,6 +159,7 @@ export default function Accessories() {
                     </button>
                   </div>
                 </td>
+                )}
               </tr>
             ))}
           </tbody>
