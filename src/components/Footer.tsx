@@ -1,4 +1,5 @@
 import { useLanguage } from '../contexts/LanguageContext'
+import packageJson from '../../package.json'
 import './Footer.css'
 
 export default function Footer() {
@@ -12,7 +13,10 @@ export default function Footer() {
             <p className="footer__text">
               © 2024 {t('app.title')}. Alle rechten voorbehouden.
             </p>
-            <p className="footer__powered">Powered by: Levens, A. for BST</p>
+            <div className="footer__powered-row">
+              <span className="footer__powered">Powered by: Levens, A. for BST</span>
+              <span className="footer__version">v{packageJson.version}</span>
+            </div>
           </div>
           <div className="footer__links">
             <a href="#" className="footer__link">Privacy</a>

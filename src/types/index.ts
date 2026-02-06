@@ -15,6 +15,9 @@ export type UserPageKey = (typeof USER_PAGE_KEYS)[number]
 
 export type UserPageVisibility = Record<UserPageKey, boolean>
 
+/** Session timeout in minutes. null = never expire. */
+export type SessionTimeoutMinutes = 10 | 30 | 60 | null
+
 export interface AppUser {
   id: string
   username: string
@@ -27,6 +30,8 @@ export interface AppUser {
   last_login?: string
   created_at: string
   updated_at: string
+  /** Minutes until auto logout. null = never. */
+  session_timeout_minutes?: SessionTimeoutMinutes
   /** Which pages are visible in nav (admin-configurable). Undefined = all visible. */
   page_visibility?: UserPageVisibility
 }
@@ -51,6 +56,7 @@ export interface UpdateUserData {
   email?: string
   role?: 'admin' | 'super_user' | 'user'
   is_active?: boolean
+  session_timeout_minutes?: SessionTimeoutMinutes
 }
 
 export interface ChangePasswordData {

@@ -39,7 +39,8 @@ CREATE TABLE IF NOT EXISTS radio_history (
     action VARCHAR(50) NOT NULL,
     description TEXT NOT NULL,
     details JSONB,
-    timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    executed_by TEXT
 );
 
 -- Create issues table

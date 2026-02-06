@@ -1,7 +1,7 @@
 {
   "name": "bst-management",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "BST Management - Apparatuur beheersysteem voor Brandweer, Politie en Ambulance",
   "type": "module",
   "scripts": {

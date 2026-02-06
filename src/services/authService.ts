@@ -9,6 +9,7 @@ import type {
   UserActivityLogEntry,
   UserPageVisibility,
   UserPageKey,
+  SessionTimeoutMinutes,
 } from '../types'
 import { USER_PAGE_KEYS } from '../types'
 
@@ -46,6 +47,7 @@ export const authService = {
       last_login: row.last_login,
       created_at: row.created_at,
       updated_at: row.updated_at,
+      session_timeout_minutes: (row.session_timeout_minutes as SessionTimeoutMinutes) ?? null,
     }
 
     await this.logActivity(user.id, 'login', true)
@@ -87,6 +89,7 @@ export const authService = {
       last_login: row.last_login,
       created_at: row.created_at,
       updated_at: row.updated_at,
+      session_timeout_minutes: (row.session_timeout_minutes as SessionTimeoutMinutes) ?? null,
     }
   },
 
@@ -157,6 +160,7 @@ export const authService = {
       last_login: row.last_login as string | undefined,
       created_at: row.created_at as string,
       updated_at: row.updated_at as string,
+      session_timeout_minutes: (row.session_timeout_minutes as SessionTimeoutMinutes) ?? null,
     }))
   },
 
@@ -235,6 +239,20 @@ export const authService = {
       }
     }
     return map
+  },
+
+  /**
+   * Set session timeout for a user (admin). 10, 30, 60 minutes or null (never).
+   */
+  async setUserSessionTimeout(
+    userId: string,
+    sessionTimeoutMinutes: SessionTimeoutMinutes
+  ): Promise<void> {
+    const { error } = await supabase.rpc('set_user_session_timeout', {
+      p_user_id: userId,
+      p_session_timeout_minutes: sessionTimeoutMinutes,
+    })
+    if (error) throw new Error(error.message)
   },
 
   /**

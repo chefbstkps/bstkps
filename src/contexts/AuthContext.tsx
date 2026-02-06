@@ -3,6 +3,7 @@ import { authService } from '../services/authService'
 import type { AppUser, LoginCredentials } from '../types'
 
 const STORAGE_KEY = 'bst_user'
+const LOGGED_IN_AT_KEY = 'bst_logged_in_at'
 
 interface AuthContextType {
   user: AppUser | null
@@ -26,12 +27,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<AppUser | null>(null)
   const [loading, setLoading] = useState(true)
 
-  const persistUser = useCallback((userData: AppUser | null) => {
+  const persistUser = useCallback((userData: AppUser | null, loggedInAt?: number) => {
     if (userData) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(userData))
+      if (loggedInAt !== undefined) {
+        localStorage.setItem(LOGGED_IN_AT_KEY, String(loggedInAt))
+      }
       setUser(userData)
     } else {
       localStorage.removeItem(STORAGE_KEY)
+      localStorage.removeItem(LOGGED_IN_AT_KEY)
       setUser(null)
     }
   }, [])
@@ -55,20 +60,30 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
     try {
       const parsed = JSON.parse(stored) as AppUser
+      const loggedInAt = localStorage.getItem(LOGGED_IN_AT_KEY)
       loadUserWithPageVisibility(parsed.id).then((userWithVisibility) => {
         if (userWithVisibility) {
           setUser(userWithVisibility)
           localStorage.setItem(STORAGE_KEY, JSON.stringify(userWithVisibility))
+          if (!loggedInAt) {
+            const fallback = userWithVisibility.last_login
+              ? new Date(userWithVisibility.last_login).getTime()
+              : Date.now()
+            localStorage.setItem(LOGGED_IN_AT_KEY, String(fallback))
+          }
         } else {
           localStorage.removeItem(STORAGE_KEY)
+          localStorage.removeItem(LOGGED_IN_AT_KEY)
           setUser(null)
         }
       }).catch(() => {
         localStorage.removeItem(STORAGE_KEY)
+        localStorage.removeItem(LOGGED_IN_AT_KEY)
         setUser(null)
       }).finally(() => setLoading(false))
     } catch {
       localStorage.removeItem(STORAGE_KEY)
+      localStorage.removeItem(LOGGED_IN_AT_KEY)
       setUser(null)
       setLoading(false)
     }
@@ -77,7 +92,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const signIn = useCallback(async (credentials: LoginCredentials) => {
     const userData = await authService.login(credentials)
     const withVisibility = await loadUserWithPageVisibility(userData.id)
-    persistUser(withVisibility ?? userData)
+    persistUser(withVisibility ?? userData, Date.now())
   }, [persistUser, loadUserWithPageVisibility])
 
   const signOut = useCallback(async () => {
@@ -86,6 +101,27 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
     persistUser(null)
   }, [user?.id, persistUser])
+
+  useEffect(() => {
+    if (!user?.id) return
+    const timeoutMinutes = user.session_timeout_minutes
+    if (timeoutMinutes == null) return
+
+    const checkExpiry = () => {
+      const loggedInAt = localStorage.getItem(LOGGED_IN_AT_KEY)
+      if (!loggedInAt) return
+      const elapsed = Date.now() - parseInt(loggedInAt, 10)
+      const limitMs = timeoutMinutes * 60 * 1000
+      if (elapsed >= limitMs) {
+        persistUser(null)
+        window.location.href = '/login'
+      }
+    }
+
+    const interval = setInterval(checkExpiry, 60_000)
+    checkExpiry()
+    return () => clearInterval(interval)
+  }, [user?.id, user?.session_timeout_minutes, persistUser])
 
   const refreshUser = useCallback(async () => {
     if (!user?.id) return

@@ -216,14 +216,16 @@ export class RadioService {
           radio_id: radioId,
           action,
           description,
-          details,
+          ...(details != null && { details }),
           timestamp: new Date().toISOString(),
-          ...(executedBy != null && { executed_by: executedBy })
+          ...(executedBy != null && executedBy !== '' && { executed_by: executedBy })
         })
       })
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+        const errBody = await response.json().catch(() => ({}))
+        const msg = errBody?.message ?? errBody?.error_description ?? response.statusText
+        throw new Error(`HTTP error! status: ${response.status}${msg ? ` - ${msg}` : ''}`)
       }
 
       const data = await response.json()

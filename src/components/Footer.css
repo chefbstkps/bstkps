@@ -33,10 +33,32 @@
   font-size: 0.8rem;
 }
 
+.footer__powered-row {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
 .footer__powered {
   color: #888;
   margin: 0;
   font-size: 0.75rem;
+}
+
+.footer__version {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+@media (max-width: 768px) {
+  .footer__powered-row {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.125rem;
+  }
 }
 
 .footer__links {
