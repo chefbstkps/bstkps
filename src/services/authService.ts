@@ -69,7 +69,7 @@ export const authService = {
       afdeling: row.afdeling ?? undefined,
     }
 
-    await this.logActivity(user.id, 'login', true)
+    await this.logActivity(user.id, 'login', true, undefined, ip || null, userAgent || null)
     return user
   },
 
@@ -120,13 +120,15 @@ export const authService = {
   },
 
   /**
-   * Write activity to user_activity_logs.
+   * Write activity to user_activity_logs. Optioneel ip_address en user_agent (voor login).
    */
   async logActivity(
     userId: string | null,
     activityType: 'login' | 'logout' | 'password_change' | 'profile_update',
     success: boolean,
-    errorMessage?: string
+    errorMessage?: string,
+    ipAddress?: string | null,
+    userAgent?: string | null
   ): Promise<void> {
     if (!userId) return
 
@@ -135,6 +137,8 @@ export const authService = {
       activity_type: activityType,
       success,
       error_message: errorMessage ?? null,
+      ip_address: ipAddress ?? null,
+      user_agent: userAgent ?? null,
     })
   },
 
@@ -260,6 +264,8 @@ export const authService = {
       success: row.success as boolean,
       error_message: (row.error_message as string) ?? null,
       created_at: row.created_at as string,
+      ip_address: (row.ip_address as string) ?? null,
+      user_agent: (row.user_agent as string) ?? null,
     }))
   },
 

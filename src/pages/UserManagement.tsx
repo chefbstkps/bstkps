@@ -112,6 +112,7 @@ export default function UserManagement() {
               <th>Rol</th>
               <th>Status</th>
               <th>Laatste login</th>
+              <th>IP-adres</th>
               <th className="user-mgmt-table__actions">Acties</th>
             </tr>
           </thead>
@@ -128,6 +129,7 @@ export default function UserManagement() {
                 <td><span className={`user-mgmt-table__role user-mgmt-table__role--${u.role}`}>{u.role}</span></td>
                 <td>{u.is_active ? 'Actief' : 'Inactief'}</td>
                 <td>{formatDate(u.last_login)}</td>
+                <td>{u.last_login_ip || '—'}</td>
                 <td className="user-mgmt-table__actions" onClick={(e) => e.stopPropagation()}>
                   <button type="button" className="user-mgmt-table__btn" title="Bewerken" onClick={() => setEditUser(u)}>
                     <Edit size={18} />

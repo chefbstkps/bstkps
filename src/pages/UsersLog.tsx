@@ -178,13 +178,15 @@ export default function UsersLog() {
               <th>Gebruiker</th>
               <th>Type</th>
               <th>Status</th>
+              <th>IP-adres</th>
+              <th>Browser</th>
               <th>Details</th>
             </tr>
           </thead>
           <tbody>
             {filteredLogs.length === 0 ? (
               <tr>
-                <td colSpan={5} className="users-log-table__empty">
+                <td colSpan={7} className="users-log-table__empty">
                   <ClipboardList size={40} />
                   Geen activiteiten gevonden
                 </td>
@@ -200,6 +202,8 @@ export default function UsersLog() {
                       {log.success ? 'Geslaagd' : 'Mislukt'}
                     </span>
                   </td>
+                  <td>{log.ip_address || '—'}</td>
+                  <td className="users-log-table__user-agent">{log.user_agent || '—'}</td>
                   <td className="users-log-table__details">{log.error_message || '—'}</td>
                 </tr>
               ))

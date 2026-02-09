@@ -96,6 +96,8 @@ export interface UserActivityLogEntry {
   success: boolean
   error_message: string | null
   created_at: string
+  ip_address?: string | null
+  user_agent?: string | null
 }
 
 // Radio types
