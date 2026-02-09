@@ -15,6 +15,8 @@ import UsersLog from './pages/UsersLog'
 import Dashboard from './pages/Dashboard'
 import Radios from './pages/Radios'
 import RadioDetails from './pages/RadioDetails'
+import Telefoon from './pages/Telefoon'
+import TelefoonDetails from './pages/TelefoonDetails'
 import RadioArchive from './pages/RadioArchive'
 import RadioArchiveDetails from './pages/RadioArchiveDetails'
 import Accessories from './pages/Accessories'
@@ -56,6 +58,8 @@ function App() {
                   <Route path="/users-log" element={<UsersLog />} />
                   <Route path="/radios" element={<Radios />} />
                   <Route path="/radios/:id" element={<RadioDetails />} />
+                  <Route path="/telefoon" element={<Telefoon />} />
+                  <Route path="/telefoon/:id" element={<TelefoonDetails />} />
                   <Route path="/radio-archive" element={<RadioArchive />} />
                   <Route path="/radio-archive/:id" element={<RadioArchiveDetails />} />
                   <Route path="/accessories" element={<Accessories />} />

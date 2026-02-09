@@ -46,6 +46,19 @@
   padding: 1.5rem 2rem;
 }
 
+.user-details-card__header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.user-details-card__header-row .user-details-card__title {
+  margin: 0;
+}
+
 .user-details-card__title {
   font-size: 1.25rem;
   font-weight: 600;
@@ -87,6 +100,12 @@
 .user-details-dl__row dd {
   margin: 0;
   font-size: 1rem;
+}
+
+.user-details-dl__user-agent {
+  word-break: break-word;
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
 }
 
 .user-details-role {

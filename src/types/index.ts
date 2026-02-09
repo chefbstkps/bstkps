@@ -9,6 +9,7 @@ export const USER_PAGE_KEYS = [
   'brands',
   'organizations',
   'radio_archive',
+  'telefoon',
 ] as const
 
 export type UserPageKey = (typeof USER_PAGE_KEYS)[number]
@@ -28,10 +29,17 @@ export interface AppUser {
   is_active: boolean
   must_change_password: boolean
   last_login?: string
+  last_login_ip?: string | null
+  last_login_user_agent?: string | null
   created_at: string
   updated_at: string
   /** Minutes until auto logout. null = never. */
   session_timeout_minutes?: SessionTimeoutMinutes
+  telefoonnummer?: string
+  rang?: string
+  organisatie?: string
+  structuur?: string
+  afdeling?: string
   /** Which pages are visible in nav (admin-configurable). Undefined = all visible. */
   page_visibility?: UserPageVisibility
 }
@@ -48,6 +56,11 @@ export interface CreateUserData {
   last_name: string
   password: string
   role: 'admin' | 'super_user' | 'user'
+  telefoonnummer?: string
+  rang?: string
+  organisatie?: string
+  structuur?: string
+  afdeling?: string
 }
 
 export interface UpdateUserData {
@@ -57,6 +70,11 @@ export interface UpdateUserData {
   role?: 'admin' | 'super_user' | 'user'
   is_active?: boolean
   session_timeout_minutes?: SessionTimeoutMinutes
+  telefoonnummer?: string
+  rang?: string
+  organisatie?: string
+  structuur?: string
+  afdeling?: string
 }
 
 export interface ChangePasswordData {
@@ -98,6 +116,46 @@ export interface Radio {
   created_at: string
   updated_at: string
   /** Username of the user who added this radio; 'Admin' for legacy records. */
+  added_by?: string | null
+}
+
+// Phone types (telefoontoestellen: geen id/alias, type = Smart Phone | Dumb Phone | Wired | Wireless)
+export type PhoneType = 'Smart Phone' | 'Dumb Phone' | 'Wired Phone' | 'Wireless Phone'
+
+export interface Phone {
+  id: string
+  merk: string
+  model: string
+  type: PhoneType
+  serienummer: string
+  telefoonnummer?: string | null
+  provider?: string | null
+  afdeling: string
+  groep?: string
+  structuur?: string
+  voertuig?: string
+  opmerking?: string
+  status: 'Actief' | 'Defect' | 'Kwijtgeraakt' | 'Ingetrokken' | 'Uitgeschakeld' | 'Inactief'
+  registratiedatum: string
+  created_at: string
+  updated_at: string
+  added_by?: string | null
+}
+
+export interface PhoneFormData {
+  merk: string
+  model: string
+  type: PhoneType
+  serienummer: string
+  telefoonnummer?: string
+  provider?: string
+  afdeling: string
+  groep?: string
+  structuur?: string
+  voertuig?: string
+  opmerking?: string
+  status: 'Actief' | 'Defect' | 'Kwijtgeraakt' | 'Ingetrokken' | 'Uitgeschakeld' | 'Inactief'
+  registratiedatum: string
   added_by?: string | null
 }
 

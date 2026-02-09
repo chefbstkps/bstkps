@@ -5,7 +5,7 @@
 -- Bestaande installatie (als de tabel al bestond vóór 'radio_archive'): voer alleen onderstaande uit:
 --   ALTER TABLE user_page_visibility DROP CONSTRAINT IF EXISTS chk_page_key;
 --   ALTER TABLE user_page_visibility ADD CONSTRAINT chk_page_key CHECK (page_key IN (
---     'storingen', 'installation', 'issue', 'accessories', 'inventory', 'brands', 'organizations', 'radio_archive'
+--     'storingen', 'installation', 'issue', 'accessories', 'inventory', 'brands', 'organizations', 'radio_archive', 'telefoon'
 --   ));
 -- Daarna de functie get_user_page_visibility opnieuw uitvoeren (zie sectie 2).
 
@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS user_page_visibility (
   visible BOOLEAN NOT NULL DEFAULT true,
   PRIMARY KEY (user_id, page_key),
   CONSTRAINT chk_page_key CHECK (page_key IN (
-    'storingen', 'installation', 'issue', 'accessories', 'inventory', 'brands', 'organizations', 'radio_archive'
+    'storingen', 'installation', 'issue', 'accessories', 'inventory', 'brands', 'organizations', 'radio_archive', 'telefoon'
   ))
 );
 
@@ -37,7 +37,7 @@ BEGIN
     COALESCE(v.visible, (u.role <> 'user'))
   FROM (VALUES
     ('storingen'::TEXT), ('installation'::TEXT), ('issue'::TEXT), ('accessories'::TEXT),
-    ('inventory'::TEXT), ('brands'::TEXT), ('organizations'::TEXT), ('radio_archive'::TEXT)
+    ('inventory'::TEXT), ('brands'::TEXT), ('organizations'::TEXT), ('radio_archive'::TEXT), ('telefoon'::TEXT)
   ) AS k(page_key)
   CROSS JOIN app_users u
   LEFT JOIN user_page_visibility v ON v.user_id = p_user_id AND v.page_key = k.page_key

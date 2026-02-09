@@ -1,0 +1,368 @@
+/* Telefoon list page - reuses .page, .stats-grid, .table from Radios/global */
+.telefoon-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.telefoon-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.search-controls {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.search-input {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0.5rem 1rem;
+  min-width: 260px;
+}
+
+.search-input svg {
+  color: var(--color-text-muted);
+  margin-right: 0.5rem;
+}
+
+.search-input input {
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--color-text-primary);
+  flex: 1;
+  padding: 0;
+}
+
+.filter-select {
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0.5rem 1rem;
+  color: var(--color-text-primary);
+  min-width: 140px;
+}
+
+.table-row-clickable {
+  cursor: pointer;
+}
+
+.table-row-clickable:hover {
+  background-color: var(--color-bg-hover);
+}
+
+.action-buttons {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+/* Ensure action column has room for both icons side by side */
+.table td.action-buttons {
+  min-width: 90px;
+  white-space: nowrap;
+}
+
+.btn-icon {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: var(--radius-sm);
+  min-width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.btn-icon svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.btn-icon:hover {
+  color: var(--color-primary);
+  background: var(--color-bg-tertiary);
+  border-color: var(--color-border);
+}
+
+.btn-icon--danger:hover {
+  color: var(--color-danger);
+  background: rgba(220, 53, 69, 0.1);
+  border-color: var(--color-danger);
+}
+
+.type-badge,
+.status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.type-badge--smart-phone { background: rgba(0, 102, 204, 0.2); color: #6eb3f7; }
+.type-badge--dumb-phone { background: rgba(108, 117, 125, 0.2); color: #adb5bd; }
+.type-badge--wired-phone { background: rgba(40, 167, 69, 0.2); color: #7dd39b; }
+.type-badge--wireless-phone { background: rgba(255, 193, 7, 0.2); color: #ffda6a; }
+
+.status-badge--actief { background: rgba(40, 167, 69, 0.2); color: #7dd39b; }
+.status-badge--defect { background: rgba(220, 53, 69, 0.2); color: #f8a0a0; }
+.status-badge--kwijtgeraakt { background: rgba(255, 193, 7, 0.2); color: #ffda6a; }
+.status-badge--ingetrokken,
+.status-badge--uitgeschakeld,
+.status-badge--inactief { background: rgba(108, 117, 125, 0.2); color: #adb5bd; }
+
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.pagination__info {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+/* Column visibility (show/hide) */
+.telefoon-table-outer {
+  margin-bottom: 0;
+}
+
+.telefoon-show-hide-columns {
+  display: flex;
+  justify-content: flex-end;
+  margin: 1rem 0;
+  gap: 1rem;
+}
+
+.telefoon-column-menu-wrapper {
+  position: relative;
+}
+
+.btn-show-hide-columns {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0.5rem 1rem;
+  color: var(--color-text-primary);
+  min-width: 150px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  justify-content: center;
+}
+
+.btn-show-hide-columns:hover {
+  background-color: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+.btn-show-hide-columns:active {
+  background-color: var(--color-bg-active);
+  color: var(--color-text-primary);
+}
+
+.column-menu {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  background-color: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  min-width: 220px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.column-menu__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.column-menu__header h4 {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.column-menu__close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.column-menu__close:hover {
+  background-color: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+.column-menu__items {
+  padding: 0.5rem;
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: min(70vh, 520px);
+  -webkit-overflow-scrolling: touch;
+}
+
+.column-menu__item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  cursor: pointer;
+  border-radius: 0.375rem;
+  transition: background-color 0.2s ease;
+  user-select: none;
+}
+
+.column-menu__item:hover {
+  background-color: var(--color-bg-hover);
+}
+
+.column-menu__item input[type="checkbox"] {
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary);
+}
+
+.column-menu__item span {
+  color: var(--color-text-primary);
+  font-size: 0.9rem;
+}
+
+/* Modal: overschrijf App.css .modal__body zodat de body scrollt (hogere specificiteit) */
+.modal.telefoon-modal .modal__body {
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: min(70vh, 500px);
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Footer van de telefoonmodal duidelijker: contrast en geen afsnijden */
+.modal.telefoon-modal .modal__actions {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1rem;
+  min-height: 60px;
+  padding: 1.25rem 2rem;
+  border-top: 2px solid var(--color-border);
+  background: linear-gradient(180deg, var(--color-bg-tertiary) 0%, var(--color-bg-secondary) 100%);
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.modal.telefoon-modal .modal__actions .btn {
+  min-height: 44px;
+  padding: 0.6rem 1.25rem;
+  line-height: 1.3;
+}
+
+.telefoon-modal__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.telefoon-modal__group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.telefoon-modal__group--full {
+  grid-column: 1 / -1;
+}
+
+.telefoon-modal__label {
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+}
+
+.telefoon-modal__input,
+.telefoon-modal__select {
+  padding: 0.5rem 0.75rem;
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  font-size: 1rem;
+}
+
+.telefoon-modal__input:focus,
+.telefoon-modal__select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.telefoon-modal__input--valid { border-color: var(--color-success); }
+.telefoon-modal__input--invalid { border-color: var(--color-danger); }
+
+.telefoon-modal__validation {
+  font-size: 0.8rem;
+}
+.telefoon-modal__validation--valid { color: var(--color-success); }
+.telefoon-modal__validation--invalid { color: var(--color-danger); }
+
+.telefoon-modal-body input[type="text"],
+.telefoon-modal-body input[type="date"],
+.telefoon-modal-body textarea {
+  width: 100%;
+}
+
+@media (max-width: 600px) {
+  .telefoon-modal__grid {
+    grid-template-columns: 1fr;
+  }
+}

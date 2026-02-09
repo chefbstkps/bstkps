@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../contexts/AuthContext'
 import { authService } from '../services/authService'
+import { OrganizationService } from '../services/organizationService'
 import type { AppUser, CreateUserData, UpdateUserData } from '../types'
 import { Plus, Edit, Trash2, Key, X, Eye, EyeOff } from 'lucide-react'
 import './UserManagement.css'
@@ -207,10 +208,78 @@ function CreateUserModal({
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [role, setRole] = useState<AppUser['role']>('user')
+  const [telefoonnummer, setTelefoonnummer] = useState('')
+  const [rang, setRang] = useState('')
+  const [organisatie, setOrganisatie] = useState('Politie')
+  const [structuur, setStructuur] = useState('')
+  const [afdeling, setAfdeling] = useState('')
+
+  const { data: groepen = [] } = useQuery({
+    queryKey: ['groepen'],
+    queryFn: () => OrganizationService.getAllGroepen(),
+  })
+
+  const [structuren, setStructuren] = useState<{ id: string; name: string }[]>([])
+  const [afdelingen, setAfdelingen] = useState<{ id: string; name: string }[]>([])
+
+  useEffect(() => {
+    setUsername(first_name)
+    setPassword(first_name ? `${first_name}!321` : '')
+  }, [first_name])
+
+  useEffect(() => {
+    if (organisatie) {
+      const selectedGroep = groepen.find((g) => g.name === organisatie)
+      if (selectedGroep) {
+        OrganizationService.getStructurenByGroep(selectedGroep.id)
+          .then(setStructuren)
+          .catch(console.error)
+      } else {
+        setStructuren([])
+      }
+      setStructuur('')
+      setAfdeling('')
+      setAfdelingen([])
+    } else {
+      setStructuren([])
+      setStructuur('')
+      setAfdeling('')
+      setAfdelingen([])
+    }
+  }, [organisatie, groepen])
+
+  useEffect(() => {
+    if (structuur) {
+      const selectedStructuur = structuren.find((s) => s.name === structuur)
+      if (selectedStructuur) {
+        OrganizationService.getAfdelingenByStructuur(selectedStructuur.id)
+          .then(setAfdelingen)
+          .catch(console.error)
+      } else {
+        setAfdelingen([])
+      }
+      setAfdeling('')
+    } else {
+      setAfdelingen([])
+      setAfdeling('')
+    }
+  }, [structuur, structuren])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onSubmit({ username, email, first_name, last_name, password, role })
+    onSubmit({
+      username,
+      email,
+      first_name,
+      last_name,
+      password,
+      role,
+      telefoonnummer: telefoonnummer || undefined,
+      rang: rang || undefined,
+      organisatie: organisatie || undefined,
+      structuur: structuur || undefined,
+      afdeling: afdeling || undefined,
+    })
   }
 
   return (
@@ -227,20 +296,20 @@ function CreateUserModal({
             {error && <div className="user-mgmt-modal__error">{error}</div>}
             <div className="user-mgmt-modal__grid">
               <div className="user-mgmt-modal__group">
-                <label className="user-mgmt-modal__label">Gebruikersnaam *</label>
-                <input type="text" className="user-mgmt-modal__input" value={username} onChange={(e) => setUsername(e.target.value)} required />
-              </div>
-              <div className="user-mgmt-modal__group">
-                <label className="user-mgmt-modal__label">E-mail *</label>
-                <input type="email" className="user-mgmt-modal__input" value={email} onChange={(e) => setEmail(e.target.value)} required />
-              </div>
-              <div className="user-mgmt-modal__group">
-                <label className="user-mgmt-modal__label">Voornaam</label>
-                <input type="text" className="user-mgmt-modal__input" value={first_name} onChange={(e) => setFirst_name(e.target.value)} />
+                <label className="user-mgmt-modal__label">Voornaam *</label>
+                <input type="text" className="user-mgmt-modal__input" value={first_name} onChange={(e) => setFirst_name(e.target.value)} required />
               </div>
               <div className="user-mgmt-modal__group">
                 <label className="user-mgmt-modal__label">Achternaam</label>
                 <input type="text" className="user-mgmt-modal__input" value={last_name} onChange={(e) => setLast_name(e.target.value)} />
+              </div>
+              <div className="user-mgmt-modal__group">
+                <label className="user-mgmt-modal__label">Gebruikersnaam *</label>
+                <input type="text" className="user-mgmt-modal__input" value={username} onChange={(e) => setUsername(e.target.value)} required />
+              </div>
+              <div className="user-mgmt-modal__group user-mgmt-modal__group--full">
+                <label className="user-mgmt-modal__label">E-mail *</label>
+                <input type="email" className="user-mgmt-modal__input" value={email} onChange={(e) => setEmail(e.target.value)} required />
               </div>
               <div className="user-mgmt-modal__group">
                 <label className="user-mgmt-modal__label">Wachtwoord *</label>
@@ -269,6 +338,55 @@ function CreateUserModal({
                 <select className="user-mgmt-modal__select" value={role} onChange={(e) => setRole(e.target.value as AppUser['role'])}>
                   {ROLES.map((r) => (
                     <option key={r} value={r}>{r}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="user-mgmt-modal__group">
+                <label className="user-mgmt-modal__label">Telefoonnummer</label>
+                <input type="tel" className="user-mgmt-modal__input" value={telefoonnummer} onChange={(e) => setTelefoonnummer(e.target.value)} />
+              </div>
+              <div className="user-mgmt-modal__group">
+                <label className="user-mgmt-modal__label">Rang</label>
+                <input type="text" className="user-mgmt-modal__input" value={rang} onChange={(e) => setRang(e.target.value)} />
+              </div>
+              <div className="user-mgmt-modal__group">
+                <label className="user-mgmt-modal__label">Organisatie</label>
+                <select
+                  className="user-mgmt-modal__select"
+                  value={organisatie}
+                  onChange={(e) => setOrganisatie(e.target.value)}
+                >
+                  <option value="">Selecteer organisatie</option>
+                  {groepen.map((g) => (
+                    <option key={g.id} value={g.name}>{g.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="user-mgmt-modal__group">
+                <label className="user-mgmt-modal__label">Structuur</label>
+                <select
+                  className="user-mgmt-modal__select"
+                  value={structuur}
+                  onChange={(e) => setStructuur(e.target.value)}
+                  disabled={!organisatie}
+                >
+                  <option value="">Selecteer structuur</option>
+                  {structuren.map((s) => (
+                    <option key={s.id} value={s.name}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="user-mgmt-modal__group">
+                <label className="user-mgmt-modal__label">Afdeling</label>
+                <select
+                  className="user-mgmt-modal__select"
+                  value={afdeling}
+                  onChange={(e) => setAfdeling(e.target.value)}
+                  disabled={!structuur}
+                >
+                  <option value="">Selecteer afdeling</option>
+                  {afdelingen.map((a) => (
+                    <option key={a.id} value={a.name}>{a.name}</option>
                   ))}
                 </select>
               </div>
@@ -302,10 +420,98 @@ function EditUserModal({
   const [email, setEmail] = useState(user.email)
   const [role, setRole] = useState<AppUser['role']>(user.role)
   const [is_active, setIs_active] = useState(user.is_active)
+  const [telefoonnummer, setTelefoonnummer] = useState(user.telefoonnummer ?? '')
+  const [rang, setRang] = useState(user.rang ?? '')
+  const [organisatie, setOrganisatie] = useState(user.organisatie ?? '')
+  const [structuur, setStructuur] = useState(user.structuur ?? '')
+  const [afdeling, setAfdeling] = useState(user.afdeling ?? '')
+
+  const { data: groepen = [] } = useQuery({
+    queryKey: ['groepen'],
+    queryFn: () => OrganizationService.getAllGroepen(),
+  })
+
+  const [structuren, setStructuren] = useState<{ id: string; name: string }[]>([])
+  const [afdelingen, setAfdelingen] = useState<{ id: string; name: string }[]>([])
+
+  useEffect(() => {
+    if (organisatie) {
+      const selectedGroep = groepen.find((g) => g.name === organisatie)
+      if (selectedGroep) {
+        OrganizationService.getStructurenByGroep(selectedGroep.id)
+          .then(setStructuren)
+          .catch(console.error)
+      } else {
+        setStructuren([])
+      }
+      if (organisatie !== user.organisatie) {
+        setStructuur('')
+        setAfdeling('')
+      }
+      setAfdelingen([])
+    } else {
+      setStructuren([])
+      setStructuur('')
+      setAfdeling('')
+      setAfdelingen([])
+    }
+  }, [organisatie, groepen, user.organisatie])
+
+  useEffect(() => {
+    if (structuur) {
+      const selectedStructuur = structuren.find((s) => s.name === structuur)
+      if (selectedStructuur) {
+        OrganizationService.getAfdelingenByStructuur(selectedStructuur.id)
+          .then(setAfdelingen)
+          .catch(console.error)
+      } else {
+        setAfdelingen([])
+      }
+      if (structuur !== user.structuur) {
+        setAfdeling('')
+      }
+    } else {
+      setAfdelingen([])
+      setAfdeling('')
+    }
+  }, [structuur, structuren, user.structuur])
+
+  useEffect(() => {
+    if (user.organisatie && groepen.length > 0) {
+      const selectedGroep = groepen.find((g) => g.name === user.organisatie)
+      if (selectedGroep) {
+        OrganizationService.getStructurenByGroep(selectedGroep.id)
+          .then(setStructuren)
+          .catch(console.error)
+      }
+    }
+  }, [user.organisatie, groepen])
+
+  useEffect(() => {
+    if (user.structuur && structuren.length > 0) {
+      const selectedStructuur = structuren.find((s) => s.name === user.structuur)
+      if (selectedStructuur) {
+        OrganizationService.getAfdelingenByStructuur(selectedStructuur.id)
+          .then(setAfdelingen)
+          .catch(console.error)
+      }
+    }
+  }, [user.structuur, structuren])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onSubmit({ first_name, last_name, email, role, is_active })
+    onSubmit({
+      first_name,
+      last_name,
+      email,
+      role,
+      is_active,
+      telefoonnummer: telefoonnummer || undefined,
+      rang: rang || undefined,
+      organisatie: organisatie || undefined,
+      structuur: structuur || undefined,
+      afdeling: afdeling || undefined,
+    })
   }
 
   return (
@@ -346,6 +552,55 @@ function EditUserModal({
                   <input type="checkbox" checked={is_active} onChange={(e) => setIs_active(e.target.checked)} />
                   Actief
                 </label>
+              </div>
+              <div className="user-mgmt-modal__group">
+                <label className="user-mgmt-modal__label">Telefoonnummer</label>
+                <input type="tel" className="user-mgmt-modal__input" value={telefoonnummer} onChange={(e) => setTelefoonnummer(e.target.value)} />
+              </div>
+              <div className="user-mgmt-modal__group">
+                <label className="user-mgmt-modal__label">Rang</label>
+                <input type="text" className="user-mgmt-modal__input" value={rang} onChange={(e) => setRang(e.target.value)} />
+              </div>
+              <div className="user-mgmt-modal__group">
+                <label className="user-mgmt-modal__label">Organisatie</label>
+                <select
+                  className="user-mgmt-modal__select"
+                  value={organisatie}
+                  onChange={(e) => setOrganisatie(e.target.value)}
+                >
+                  <option value="">Selecteer organisatie</option>
+                  {groepen.map((g) => (
+                    <option key={g.id} value={g.name}>{g.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="user-mgmt-modal__group">
+                <label className="user-mgmt-modal__label">Structuur</label>
+                <select
+                  className="user-mgmt-modal__select"
+                  value={structuur}
+                  onChange={(e) => setStructuur(e.target.value)}
+                  disabled={!organisatie}
+                >
+                  <option value="">Selecteer structuur</option>
+                  {structuren.map((s) => (
+                    <option key={s.id} value={s.name}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="user-mgmt-modal__group">
+                <label className="user-mgmt-modal__label">Afdeling</label>
+                <select
+                  className="user-mgmt-modal__select"
+                  value={afdeling}
+                  onChange={(e) => setAfdeling(e.target.value)}
+                  disabled={!structuur}
+                >
+                  <option value="">Selecteer afdeling</option>
+                  {afdelingen.map((a) => (
+                    <option key={a.id} value={a.name}>{a.name}</option>
+                  ))}
+                </select>
               </div>
             </div>
           </div>

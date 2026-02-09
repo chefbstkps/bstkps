@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useAuth } from '../contexts/AuthContext'
-import { Radio, Package, Upload, Wrench, Home, LogOut, Tag, Menu, X, AlertTriangle, Building2, Archive, ArchiveRestore, User, Users, ClipboardList, ShieldCheck, ChevronDown } from 'lucide-react'
+import { Radio, Package, Upload, Wrench, Home, LogOut, Tag, Menu, X, AlertTriangle, Building2, Archive, ArchiveRestore, User, Users, ClipboardList, ShieldCheck, ChevronDown, Smartphone } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import './Navbar.css'
 
@@ -31,6 +31,7 @@ export default function Navbar() {
     '/brands': 'brands',
     '/organizations': 'organizations',
     '/radio-archive': 'radio_archive',
+    '/telefoon': 'telefoon',
   }
 
   const isPageVisible = (path: string) => {
@@ -43,6 +44,7 @@ export default function Navbar() {
   const allMainNavItems = [
     { path: '/', label: t('nav.dashboard'), icon: Home },
     { path: '/radios', label: t('nav.radios'), icon: Radio },
+    { path: '/telefoon', label: 'Telefoon', icon: Smartphone },
     { path: '/storingen', label: 'Storingen', icon: AlertTriangle },
     { path: '/installation', label: t('nav.installation'), icon: Wrench },
   ]

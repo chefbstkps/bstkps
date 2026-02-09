@@ -18,13 +18,25 @@ const ACTIVITY_LOGS_TABLE = 'user_activity_logs'
 export const authService = {
   /**
    * Validate credentials and return user. Uses RPC login_user (checks password in DB).
+   * Registreert IP en browser (user agent) bij succesvolle login.
    */
   async login(credentials: LoginCredentials): Promise<AppUser> {
-    const { data, error } = await supabase
-      .rpc('login_user', {
-        p_username: credentials.username,
-        p_password: credentials.password,
-      })
+    let ip = ''
+    try {
+      const res = await fetch('https://api.ipify.org?format=json', { signal: AbortSignal.timeout(3000) })
+      const json = await res.json()
+      if (typeof json?.ip === 'string') ip = json.ip
+    } catch {
+      // negeer; ip blijft leeg
+    }
+    const userAgent = typeof navigator !== 'undefined' ? navigator.userAgent : ''
+
+    const { data, error } = await supabase.rpc('login_user', {
+      p_username: credentials.username,
+      p_password: credentials.password,
+      p_ip: ip || null,
+      p_user_agent: userAgent || null,
+    })
 
     if (error) {
       throw new Error(error.message || 'Inloggen mislukt')
@@ -45,9 +57,16 @@ export const authService = {
       is_active: row.is_active,
       must_change_password: row.must_change_password,
       last_login: row.last_login,
+      last_login_ip: row.last_login_ip ?? undefined,
+      last_login_user_agent: row.last_login_user_agent ?? undefined,
       created_at: row.created_at,
       updated_at: row.updated_at,
       session_timeout_minutes: (row.session_timeout_minutes as SessionTimeoutMinutes) ?? null,
+      telefoonnummer: row.telefoonnummer ?? undefined,
+      rang: row.rang ?? undefined,
+      organisatie: row.organisatie ?? undefined,
+      structuur: row.structuur ?? undefined,
+      afdeling: row.afdeling ?? undefined,
     }
 
     await this.logActivity(user.id, 'login', true)
@@ -87,9 +106,16 @@ export const authService = {
       is_active: row.is_active,
       must_change_password: row.must_change_password,
       last_login: row.last_login,
+      last_login_ip: row.last_login_ip ?? undefined,
+      last_login_user_agent: row.last_login_user_agent ?? undefined,
       created_at: row.created_at,
       updated_at: row.updated_at,
       session_timeout_minutes: (row.session_timeout_minutes as SessionTimeoutMinutes) ?? null,
+      telefoonnummer: row.telefoonnummer ?? undefined,
+      rang: row.rang ?? undefined,
+      organisatie: row.organisatie ?? undefined,
+      structuur: row.structuur ?? undefined,
+      afdeling: row.afdeling ?? undefined,
     }
   },
 
@@ -123,6 +149,11 @@ export const authService = {
       p_email: data.email ?? null,
       p_role: data.role ?? null,
       p_is_active: data.is_active ?? null,
+      p_telefoonnummer: data.telefoonnummer ?? null,
+      p_rang: data.rang ?? null,
+      p_organisatie: data.organisatie ?? null,
+      p_structuur: data.structuur ?? null,
+      p_afdeling: data.afdeling ?? null,
     })
     if (error) throw new Error(error.message)
   },
@@ -158,9 +189,16 @@ export const authService = {
       is_active: row.is_active as boolean,
       must_change_password: row.must_change_password as boolean,
       last_login: row.last_login as string | undefined,
+      last_login_ip: (row.last_login_ip as string) ?? undefined,
+      last_login_user_agent: (row.last_login_user_agent as string) ?? undefined,
       created_at: row.created_at as string,
       updated_at: row.updated_at as string,
       session_timeout_minutes: (row.session_timeout_minutes as SessionTimeoutMinutes) ?? null,
+      telefoonnummer: (row.telefoonnummer as string) ?? undefined,
+      rang: (row.rang as string) ?? undefined,
+      organisatie: (row.organisatie as string) ?? undefined,
+      structuur: (row.structuur as string) ?? undefined,
+      afdeling: (row.afdeling as string) ?? undefined,
     }))
   },
 
@@ -175,6 +213,11 @@ export const authService = {
       p_last_name: data.last_name,
       p_password: data.password,
       p_role: data.role,
+      p_telefoonnummer: data.telefoonnummer ?? null,
+      p_rang: data.rang ?? null,
+      p_organisatie: data.organisatie ?? null,
+      p_structuur: data.structuur ?? null,
+      p_afdeling: data.afdeling ?? null,
     })
     if (error) throw new Error(error.message)
     return id as string

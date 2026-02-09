@@ -1396,8 +1396,8 @@ function RadioModal({ radio, onClose }: { radio: Radio | null; onClose: () => vo
 
   // Fetch brands with radio categories
   const { data: brands = [] } = useQuery({
-    queryKey: ['brands-with-radios'],
-    queryFn: () => BrandService.getBrandsWithRadioCategories()
+    queryKey: ['brands'],
+    queryFn: () => BrandService.getAll()
   })
 
   // Fetch models for selected brand

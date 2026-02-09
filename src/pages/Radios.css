@@ -811,6 +811,9 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   z-index: 1000;
   min-width: 220px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
 }
 
 .column-menu__header {
@@ -819,6 +822,7 @@
   align-items: center;
   padding: 1rem;
   border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
 }
 
 .column-menu__header h4 {
@@ -851,11 +855,14 @@
 
 .column-menu__items {
   padding: 0.5rem;
-  max-height: min(70vh, 520px);
+  min-height: 0;
+  flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
+  max-height: min(70vh, 520px);
   scrollbar-width: thin;
   scrollbar-color: var(--color-border) var(--color-bg-tertiary);
+  -webkit-overflow-scrolling: touch;
 }
 
 .column-menu__items::-webkit-scrollbar {

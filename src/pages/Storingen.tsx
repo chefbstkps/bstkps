@@ -241,8 +241,11 @@ export default function Storingen() {
                     className="form-select"
                   >
                     <option value="">Selecteer type</option>
+                    <option value="Draadloos">Draadloos</option>
                     <option value="Glasvezel">Glasvezel</option>
                     <option value="Koper">Koper</option>
+                    <option value="Mobiel">Mobiel</option>
+                    <option value="Anders">Anders</option>
                   </select>
                 </div>
                 

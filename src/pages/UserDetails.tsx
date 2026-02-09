@@ -3,10 +3,14 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../contexts/AuthContext'
 import { authService } from '../services/authService'
-import type { UserPageVisibility, UserPageKey, SessionTimeoutMinutes } from '../types'
+import { OrganizationService } from '../services/organizationService'
+import type { UserPageVisibility, UserPageKey, SessionTimeoutMinutes, AppUser, UpdateUserData } from '../types'
 import { USER_PAGE_KEYS } from '../types'
-import { ArrowLeft, Save } from 'lucide-react'
+import { ArrowLeft, Save, Edit, X } from 'lucide-react'
 import './UserDetails.css'
+import './UserManagement.css'
+
+const ROLES: Array<AppUser['role']> = ['admin', 'super_user', 'user']
 
 const PAGE_LABELS: Record<UserPageKey, string> = {
   storingen: 'Storingen',
@@ -17,6 +21,7 @@ const PAGE_LABELS: Record<UserPageKey, string> = {
   brands: 'Merken',
   organizations: 'Organisatie',
   radio_archive: 'Radio archief',
+  telefoon: 'Telefoon',
 }
 
 const SESSION_TIMEOUT_OPTIONS: { value: SessionTimeoutMinutes; label: string }[] = [
@@ -35,6 +40,7 @@ const defaultVisibility: UserPageVisibility = {
   brands: true,
   organizations: true,
   radio_archive: true,
+  telefoon: true,
 }
 
 export default function UserDetails() {
@@ -46,6 +52,7 @@ export default function UserDetails() {
   const [savedVisibility, setSavedVisibility] = useState<UserPageVisibility>(defaultVisibility)
   const [sessionTimeout, setSessionTimeout] = useState<SessionTimeoutMinutes>(null)
   const [savedSessionTimeout, setSavedSessionTimeout] = useState<SessionTimeoutMinutes>(null)
+  const [editOpen, setEditOpen] = useState(false)
 
   const { data: user, isLoading, error } = useQuery({
     queryKey: ['app-user', id],
@@ -80,6 +87,14 @@ export default function UserDetails() {
     onSuccess: (_, timeout) => {
       queryClient.invalidateQueries({ queryKey: ['app-user', id] })
       setSavedSessionTimeout(timeout)
+    },
+  })
+
+  const updateMutation = useMutation({
+    mutationFn: (vars: { data: UpdateUserData }) => authService.updateUser(id!, vars.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['app-user', id] })
+      setEditOpen(false)
     },
   })
 
@@ -173,7 +188,18 @@ export default function UserDetails() {
 
       <div className="user-details-page__grid">
         <section className="user-details-card">
-          <h2 className="user-details-card__title">Gegevens</h2>
+          <div className="user-details-card__header-row">
+            <h2 className="user-details-card__title">Gegevens</h2>
+            <button
+              type="button"
+              className="btn btn--secondary"
+              onClick={() => setEditOpen(true)}
+              aria-label="Gebruiker bewerken"
+            >
+              <Edit size={18} />
+              Bewerken
+            </button>
+          </div>
           <dl className="user-details-dl">
             <div className="user-details-dl__row">
               <dt>Gebruikersnaam</dt>
@@ -200,8 +226,36 @@ export default function UserDetails() {
               <dd>{user.is_active ? 'Actief' : 'Inactief'}</dd>
             </div>
             <div className="user-details-dl__row">
+              <dt>Telefoonnummer</dt>
+              <dd>{user.telefoonnummer || '—'}</dd>
+            </div>
+            <div className="user-details-dl__row">
+              <dt>Rang</dt>
+              <dd>{user.rang || '—'}</dd>
+            </div>
+            <div className="user-details-dl__row">
+              <dt>Organisatie</dt>
+              <dd>{user.organisatie || '—'}</dd>
+            </div>
+            <div className="user-details-dl__row">
+              <dt>Structuur</dt>
+              <dd>{user.structuur || '—'}</dd>
+            </div>
+            <div className="user-details-dl__row">
+              <dt>Afdeling</dt>
+              <dd>{user.afdeling || '—'}</dd>
+            </div>
+            <div className="user-details-dl__row">
               <dt>Laatste login</dt>
               <dd>{formatDate(user.last_login)}</dd>
+            </div>
+            <div className="user-details-dl__row">
+              <dt>Laatste login IP</dt>
+              <dd>{user.last_login_ip || '—'}</dd>
+            </div>
+            <div className="user-details-dl__row">
+              <dt>Browser (laatste login)</dt>
+              <dd className="user-details-dl__user-agent">{user.last_login_user_agent || '—'}</dd>
             </div>
             <div className="user-details-dl__row">
               <dt>Aangemaakt</dt>
@@ -282,6 +336,228 @@ export default function UserDetails() {
             </div>
           )}
         </section>
+      </div>
+
+      {editOpen && user && (
+        <EditUserModal
+          user={user}
+          onClose={() => setEditOpen(false)}
+          onSubmit={(data) => updateMutation.mutate({ data })}
+          isSubmitting={updateMutation.isPending}
+          error={updateMutation.error?.message}
+        />
+      )}
+    </div>
+  )
+}
+
+function EditUserModal({
+  user,
+  onClose,
+  onSubmit,
+  isSubmitting,
+  error,
+}: {
+  user: AppUser
+  onClose: () => void
+  onSubmit: (data: UpdateUserData) => void
+  isSubmitting: boolean
+  error: string | undefined
+}) {
+  const [first_name, setFirst_name] = useState(user.first_name)
+  const [last_name, setLast_name] = useState(user.last_name)
+  const [email, setEmail] = useState(user.email)
+  const [role, setRole] = useState<AppUser['role']>(user.role)
+  const [is_active, setIs_active] = useState(user.is_active)
+  const [telefoonnummer, setTelefoonnummer] = useState(user.telefoonnummer ?? '')
+  const [rang, setRang] = useState(user.rang ?? '')
+  const [organisatie, setOrganisatie] = useState(user.organisatie ?? '')
+  const [structuur, setStructuur] = useState(user.structuur ?? '')
+  const [afdeling, setAfdeling] = useState(user.afdeling ?? '')
+
+  const { data: groepen = [] } = useQuery({
+    queryKey: ['groepen'],
+    queryFn: () => OrganizationService.getAllGroepen(),
+  })
+
+  const [structuren, setStructuren] = useState<{ id: string; name: string }[]>([])
+  const [afdelingen, setAfdelingen] = useState<{ id: string; name: string }[]>([])
+
+  useEffect(() => {
+    if (organisatie) {
+      const selectedGroep = groepen.find((g) => g.name === organisatie)
+      if (selectedGroep) {
+        OrganizationService.getStructurenByGroep(selectedGroep.id)
+          .then(setStructuren)
+          .catch(console.error)
+      } else {
+        setStructuren([])
+      }
+      if (organisatie !== user.organisatie) {
+        setStructuur('')
+        setAfdeling('')
+      }
+      setAfdelingen([])
+    } else {
+      setStructuren([])
+      setStructuur('')
+      setAfdeling('')
+      setAfdelingen([])
+    }
+  }, [organisatie, groepen, user.organisatie])
+
+  useEffect(() => {
+    if (structuur) {
+      const selectedStructuur = structuren.find((s) => s.name === structuur)
+      if (selectedStructuur) {
+        OrganizationService.getAfdelingenByStructuur(selectedStructuur.id)
+          .then(setAfdelingen)
+          .catch(console.error)
+      } else {
+        setAfdelingen([])
+      }
+      if (structuur !== user.structuur) {
+        setAfdeling('')
+      }
+    } else {
+      setAfdelingen([])
+      setAfdeling('')
+    }
+  }, [structuur, structuren, user.structuur])
+
+  useEffect(() => {
+    if (user.organisatie && groepen.length > 0) {
+      const selectedGroep = groepen.find((g) => g.name === user.organisatie)
+      if (selectedGroep) {
+        OrganizationService.getStructurenByGroep(selectedGroep.id)
+          .then(setStructuren)
+          .catch(console.error)
+      }
+    }
+  }, [user.organisatie, groepen])
+
+  useEffect(() => {
+    if (user.structuur && structuren.length > 0) {
+      const selectedStructuur = structuren.find((s) => s.name === user.structuur)
+      if (selectedStructuur) {
+        OrganizationService.getAfdelingenByStructuur(selectedStructuur.id)
+          .then(setAfdelingen)
+          .catch(console.error)
+      }
+    }
+  }, [user.structuur, structuren])
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    onSubmit({
+      first_name,
+      last_name,
+      email,
+      role,
+      is_active,
+      telefoonnummer: telefoonnummer || undefined,
+      rang: rang || undefined,
+      organisatie: organisatie || undefined,
+      structuur: structuur || undefined,
+      afdeling: afdeling || undefined,
+    })
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal user-mgmt-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal__header">
+          <h2 className="modal__title">Gebruiker bewerken: {user.username}</h2>
+          <button type="button" className="modal__close" onClick={onClose} aria-label="Sluiten">
+            <X size={24} />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit}>
+          <div className="modal__body">
+            {error && <div className="user-mgmt-modal__error">{error}</div>}
+            <div className="user-mgmt-modal__grid">
+              <div className="user-mgmt-modal__group">
+                <label className="user-mgmt-modal__label">Voornaam</label>
+                <input type="text" className="user-mgmt-modal__input" value={first_name} onChange={(e) => setFirst_name(e.target.value)} />
+              </div>
+              <div className="user-mgmt-modal__group">
+                <label className="user-mgmt-modal__label">Achternaam</label>
+                <input type="text" className="user-mgmt-modal__input" value={last_name} onChange={(e) => setLast_name(e.target.value)} />
+              </div>
+              <div className="user-mgmt-modal__group user-mgmt-modal__group--full">
+                <label className="user-mgmt-modal__label">E-mail *</label>
+                <input type="email" className="user-mgmt-modal__input" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              </div>
+              <div className="user-mgmt-modal__group">
+                <label className="user-mgmt-modal__label">Rol</label>
+                <select className="user-mgmt-modal__select" value={role} onChange={(e) => setRole(e.target.value as AppUser['role'])}>
+                  {ROLES.map((r) => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="user-mgmt-modal__group">
+                <label className="user-mgmt-modal__label">
+                  <input type="checkbox" checked={is_active} onChange={(e) => setIs_active(e.target.checked)} />
+                  Actief
+                </label>
+              </div>
+              <div className="user-mgmt-modal__group">
+                <label className="user-mgmt-modal__label">Telefoonnummer</label>
+                <input type="tel" className="user-mgmt-modal__input" value={telefoonnummer} onChange={(e) => setTelefoonnummer(e.target.value)} />
+              </div>
+              <div className="user-mgmt-modal__group">
+                <label className="user-mgmt-modal__label">Rang</label>
+                <input type="text" className="user-mgmt-modal__input" value={rang} onChange={(e) => setRang(e.target.value)} />
+              </div>
+              <div className="user-mgmt-modal__group">
+                <label className="user-mgmt-modal__label">Organisatie</label>
+                <select
+                  className="user-mgmt-modal__select"
+                  value={organisatie}
+                  onChange={(e) => setOrganisatie(e.target.value)}
+                >
+                  <option value="">Selecteer organisatie</option>
+                  {groepen.map((g) => (
+                    <option key={g.id} value={g.name}>{g.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="user-mgmt-modal__group">
+                <label className="user-mgmt-modal__label">Structuur</label>
+                <select
+                  className="user-mgmt-modal__select"
+                  value={structuur}
+                  onChange={(e) => setStructuur(e.target.value)}
+                  disabled={!organisatie}
+                >
+                  <option value="">Selecteer structuur</option>
+                  {structuren.map((s) => (
+                    <option key={s.id} value={s.name}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="user-mgmt-modal__group">
+                <label className="user-mgmt-modal__label">Afdeling</label>
+                <select
+                  className="user-mgmt-modal__select"
+                  value={afdeling}
+                  onChange={(e) => setAfdeling(e.target.value)}
+                  disabled={!structuur}
+                >
+                  <option value="">Selecteer afdeling</option>
+                  {afdelingen.map((a) => (
+                    <option key={a.id} value={a.name}>{a.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+          <div className="modal__actions">
+            <button type="button" className="btn btn--secondary" onClick={onClose}>Annuleren</button>
+            <button type="submit" className="btn btn--primary" disabled={isSubmitting}>{isSubmitting ? 'Opslaan...' : 'Opslaan'}</button>
+          </div>
+        </form>
       </div>
     </div>
   )
