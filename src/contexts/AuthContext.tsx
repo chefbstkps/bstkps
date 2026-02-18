@@ -4,6 +4,7 @@ import type { AppUser, LoginCredentials } from '../types'
 
 const STORAGE_KEY = 'bst_user'
 const LOGGED_IN_AT_KEY = 'bst_logged_in_at'
+const LAST_ACTIVITY_AT_KEY = 'bst_last_activity_at'
 
 interface AuthContextType {
   user: AppUser | null
@@ -32,11 +33,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(userData))
       if (loggedInAt !== undefined) {
         localStorage.setItem(LOGGED_IN_AT_KEY, String(loggedInAt))
+        const now = Date.now()
+        localStorage.setItem(LAST_ACTIVITY_AT_KEY, String(now))
       }
       setUser(userData)
     } else {
       localStorage.removeItem(STORAGE_KEY)
       localStorage.removeItem(LOGGED_IN_AT_KEY)
+      localStorage.removeItem(LAST_ACTIVITY_AT_KEY)
       setUser(null)
     }
   }, [])
@@ -70,20 +74,27 @@ export function AuthProvider({ children }: AuthProviderProps) {
               ? new Date(userWithVisibility.last_login).getTime()
               : Date.now()
             localStorage.setItem(LOGGED_IN_AT_KEY, String(fallback))
+            localStorage.setItem(LAST_ACTIVITY_AT_KEY, String(Date.now()))
+          }
+          if ((userWithVisibility.session_timeout_type ?? 'since_login') === 'inactivity' && !localStorage.getItem(LAST_ACTIVITY_AT_KEY)) {
+            localStorage.setItem(LAST_ACTIVITY_AT_KEY, String(Date.now()))
           }
         } else {
           localStorage.removeItem(STORAGE_KEY)
           localStorage.removeItem(LOGGED_IN_AT_KEY)
+          localStorage.removeItem(LAST_ACTIVITY_AT_KEY)
           setUser(null)
         }
       }).catch(() => {
         localStorage.removeItem(STORAGE_KEY)
         localStorage.removeItem(LOGGED_IN_AT_KEY)
+        localStorage.removeItem(LAST_ACTIVITY_AT_KEY)
         setUser(null)
       }).finally(() => setLoading(false))
     } catch {
       localStorage.removeItem(STORAGE_KEY)
       localStorage.removeItem(LOGGED_IN_AT_KEY)
+      localStorage.removeItem(LAST_ACTIVITY_AT_KEY)
       setUser(null)
       setLoading(false)
     }
@@ -107,10 +118,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const timeoutMinutes = user.session_timeout_minutes
     if (timeoutMinutes == null) return
 
+    const timeoutType = user.session_timeout_type ?? 'since_login'
+
     const checkExpiry = () => {
-      const loggedInAt = localStorage.getItem(LOGGED_IN_AT_KEY)
-      if (!loggedInAt) return
-      const elapsed = Date.now() - parseInt(loggedInAt, 10)
+      const refKey = timeoutType === 'inactivity' ? LAST_ACTIVITY_AT_KEY : LOGGED_IN_AT_KEY
+      const refAt = localStorage.getItem(refKey)
+      if (!refAt) return
+      const elapsed = Date.now() - parseInt(refAt, 10)
       const limitMs = timeoutMinutes * 60 * 1000
       if (elapsed >= limitMs) {
         persistUser(null)
@@ -121,7 +135,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const interval = setInterval(checkExpiry, 60_000)
     checkExpiry()
     return () => clearInterval(interval)
-  }, [user?.id, user?.session_timeout_minutes, persistUser])
+  }, [user?.id, user?.session_timeout_minutes, user?.session_timeout_type, persistUser])
+
+  // Update last activity timestamp on user interaction (for inactivity timeout)
+  useEffect(() => {
+    if (!user?.id) return
+    if ((user.session_timeout_type ?? 'since_login') !== 'inactivity') return
+
+    const updateActivity = () => {
+      localStorage.setItem(LAST_ACTIVITY_AT_KEY, String(Date.now()))
+    }
+
+    const events = ['mousedown', 'keydown', 'touchstart', 'scroll']
+    events.forEach((ev) => window.addEventListener(ev, updateActivity))
+    return () => events.forEach((ev) => window.removeEventListener(ev, updateActivity))
+  }, [user?.id, user?.session_timeout_type])
 
   const refreshUser = useCallback(async () => {
     if (!user?.id) return

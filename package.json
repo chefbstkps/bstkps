@@ -1,7 +1,7 @@
 {
   "name": "bst-management",
   "private": true,
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "BST Management - Apparatuur beheersysteem voor Brandweer, Politie en Ambulance",
   "type": "module",
   "scripts": {
@@ -14,6 +14,7 @@
     "@supabase/supabase-js": "^2.39.0",
     "@tanstack/react-query": "^5.89.0",
     "@types/react-router-dom": "^5.3.3",
+    "jspdf": "^4.1.0",
     "lucide-react": "^0.544.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",

@@ -1,0 +1,72 @@
+/* PhoneNumberDetails - layout and modal */
+.phone-number-details {
+  margin-top: 1.5rem;
+}
+
+.phone-number-details .card {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.phone-number-details .card__header {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg-tertiary);
+}
+
+.phone-number-details .card__title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.phone-number-details .card__body {
+  padding: 1.5rem;
+}
+
+.phone-number-details .info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1.25rem;
+}
+
+.phone-number-details .info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.phone-number-details .info-item--full {
+  grid-column: 1 / -1;
+}
+
+.phone-number-details .info-label {
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+}
+
+.phone-number-details .info-value {
+  color: var(--color-text-primary);
+  font-size: 1rem;
+}
+
+.phone-number-details .status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.phone-number-details-modal__error {
+  padding: 0.75rem;
+  background: rgba(220, 53, 69, 0.15);
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-md);
+  color: #f8a0a0;
+  margin-bottom: 1rem;
+}

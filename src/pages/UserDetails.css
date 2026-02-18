@@ -165,6 +165,32 @@
 
 .user-details-session-timeout {
   display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.user-details-session-timeout-type {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.user-details-session-timeout-type .user-details-radio {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.95rem;
+  color: var(--color-text-primary);
+}
+
+.user-details-session-timeout-type .user-details-radio input {
+  cursor: pointer;
+  accent-color: var(--color-primary);
+}
+
+.user-details-session-timeout-minutes {
+  display: flex;
   align-items: center;
   gap: 1rem;
   flex-wrap: wrap;

@@ -11,6 +11,7 @@ function getPageKeyForPath(path: string): string | null {
   if (path === '/organizations') return 'organizations'
   if (path === '/radio-archive' || path.startsWith('/radio-archive/')) return 'radio_archive'
   if (path === '/telefoon' || path.startsWith('/telefoon/')) return 'telefoon'
+  if (path === '/phone-numbers' || path.startsWith('/phone-numbers/')) return 'phone_numbers'
   return null
 }
 

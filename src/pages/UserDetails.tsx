@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../contexts/AuthContext'
 import { authService } from '../services/authService'
 import { OrganizationService } from '../services/organizationService'
-import type { UserPageVisibility, UserPageKey, SessionTimeoutMinutes, AppUser, UpdateUserData } from '../types'
+import type { UserPageVisibility, UserPageKey, SessionTimeoutMinutes, SessionTimeoutType, AppUser, UpdateUserData } from '../types'
 import { USER_PAGE_KEYS } from '../types'
 import { ArrowLeft, Save, Edit, X } from 'lucide-react'
 import './UserDetails.css'
@@ -22,6 +22,7 @@ const PAGE_LABELS: Record<UserPageKey, string> = {
   organizations: 'Organisatie',
   radio_archive: 'Radio archief',
   telefoon: 'Telefoon',
+  phone_numbers: 'Telefoonnummers',
 }
 
 const SESSION_TIMEOUT_OPTIONS: { value: SessionTimeoutMinutes; label: string }[] = [
@@ -29,6 +30,11 @@ const SESSION_TIMEOUT_OPTIONS: { value: SessionTimeoutMinutes; label: string }[]
   { value: 30, label: '30 minuten' },
   { value: 60, label: '60 minuten' },
   { value: null, label: 'Nooit' },
+]
+
+const SESSION_TIMEOUT_TYPE_OPTIONS: { value: SessionTimeoutType; label: string }[] = [
+  { value: 'since_login', label: 'Verloop ongeacht activiteit (X minuten na inloggen)' },
+  { value: 'inactivity', label: 'Verloop na inactiviteit (X minuten zonder actie)' },
 ]
 
 const defaultVisibility: UserPageVisibility = {
@@ -41,6 +47,7 @@ const defaultVisibility: UserPageVisibility = {
   organizations: true,
   radio_archive: true,
   telefoon: true,
+  phone_numbers: true,
 }
 
 export default function UserDetails() {
@@ -52,6 +59,8 @@ export default function UserDetails() {
   const [savedVisibility, setSavedVisibility] = useState<UserPageVisibility>(defaultVisibility)
   const [sessionTimeout, setSessionTimeout] = useState<SessionTimeoutMinutes>(null)
   const [savedSessionTimeout, setSavedSessionTimeout] = useState<SessionTimeoutMinutes>(null)
+  const [sessionTimeoutType, setSessionTimeoutType] = useState<SessionTimeoutType>('since_login')
+  const [savedSessionTimeoutType, setSavedSessionTimeoutType] = useState<SessionTimeoutType>('since_login')
   const [editOpen, setEditOpen] = useState(false)
 
   const { data: user, isLoading, error } = useQuery({
@@ -80,13 +89,14 @@ export default function UserDetails() {
   })
 
   const sessionTimeoutMutation = useMutation({
-    mutationFn: async (timeout: SessionTimeoutMinutes) => {
+    mutationFn: async (payload: { timeout: SessionTimeoutMinutes; type: SessionTimeoutType }) => {
       if (!id) return
-      await authService.setUserSessionTimeout(id, timeout)
+      await authService.setUserSessionTimeout(id, payload.timeout, payload.type)
     },
-    onSuccess: (_, timeout) => {
+    onSuccess: (_, payload) => {
       queryClient.invalidateQueries({ queryKey: ['app-user', id] })
-      setSavedSessionTimeout(timeout)
+      setSavedSessionTimeout(payload.timeout)
+      setSavedSessionTimeoutType(payload.type)
     },
   })
 
@@ -108,8 +118,11 @@ export default function UserDetails() {
   useEffect(() => {
     if (user) {
       const timeout = user.session_timeout_minutes ?? null
+      const type = user.session_timeout_type ?? 'since_login'
       setSessionTimeout(timeout)
       setSavedSessionTimeout(timeout)
+      setSessionTimeoutType(type)
+      setSavedSessionTimeoutType(type)
     }
   }, [user])
 
@@ -170,7 +183,7 @@ export default function UserDetails() {
 
   const hasChanges =
     USER_PAGE_KEYS.some((key) => visibility[key] !== savedVisibility[key])
-  const hasSessionTimeoutChanges = sessionTimeout !== savedSessionTimeout
+  const hasSessionTimeoutChanges = sessionTimeout !== savedSessionTimeout || sessionTimeoutType !== savedSessionTimeoutType
 
   return (
     <div className="user-details-page">
@@ -272,34 +285,50 @@ export default function UserDetails() {
           <h2 className="user-details-card__title">Sessie verloop</h2>
           <p className="user-details-card__intro">
             Na het geselecteerd aantal minuten wordt de gebruiker automatisch uitgelogd en moet opnieuw inloggen.
-            &quot;Nooit&quot; betekent dat de sessie niet vervalt.
+            &quot;Nooit&quot; betekent dat de sessie niet vervalt. Kies of de timer loopt vanaf inloggen of alleen na inactiviteit.
           </p>
           <div className="user-details-session-timeout">
-            <select
-              className="user-details-select"
-              value={sessionTimeout ?? 'never'}
-              onChange={(e) => {
-                const v = e.target.value
-                setSessionTimeout(v === 'never' ? null : (Number(v) as 10 | 30 | 60))
-              }}
-            >
-              {SESSION_TIMEOUT_OPTIONS.map((opt) => (
-                <option key={String(opt.value)} value={opt.value ?? 'never'}>
-                  {opt.label}
-                </option>
+            <div className="user-details-session-timeout-type">
+              {SESSION_TIMEOUT_TYPE_OPTIONS.map((opt) => (
+                <label key={opt.value} className="user-details-radio">
+                  <input
+                    type="radio"
+                    name="sessionTimeoutType"
+                    value={opt.value}
+                    checked={sessionTimeoutType === opt.value}
+                    onChange={() => setSessionTimeoutType(opt.value)}
+                  />
+                  <span>{opt.label}</span>
+                </label>
               ))}
-            </select>
-            {hasSessionTimeoutChanges && (
-              <button
-                type="button"
-                className="btn btn--primary"
-                onClick={() => sessionTimeoutMutation.mutate(sessionTimeout)}
-                disabled={sessionTimeoutMutation.isPending}
+            </div>
+            <div className="user-details-session-timeout-minutes">
+              <select
+                className="user-details-select"
+                value={sessionTimeout ?? 'never'}
+                onChange={(e) => {
+                  const v = e.target.value
+                  setSessionTimeout(v === 'never' ? null : (Number(v) as 10 | 30 | 60))
+                }}
               >
-                <Save size={18} />
-                {sessionTimeoutMutation.isPending ? 'Opslaan...' : 'Opslaan'}
-              </button>
-            )}
+                {SESSION_TIMEOUT_OPTIONS.map((opt) => (
+                  <option key={String(opt.value)} value={opt.value ?? 'never'}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+              {hasSessionTimeoutChanges && (
+                <button
+                  type="button"
+                  className="btn btn--primary"
+                  onClick={() => sessionTimeoutMutation.mutate({ timeout: sessionTimeout, type: sessionTimeoutType })}
+                  disabled={sessionTimeoutMutation.isPending}
+                >
+                  <Save size={18} />
+                  {sessionTimeoutMutation.isPending ? 'Opslaan...' : 'Opslaan'}
+                </button>
+              )}
+            </div>
           </div>
         </section>
 

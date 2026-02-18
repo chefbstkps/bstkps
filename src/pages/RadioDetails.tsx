@@ -8,7 +8,8 @@ import { InventoryService } from '../services/inventoryService'
 import { AccessoryService } from '../services/accessoryService'
 import { OrganizationService } from '../services/organizationService'
 import { type InventoryIssueFormData, type Radio } from '../types'
-import { ArrowLeft, Edit, Trash2, Battery, Wrench, Building, Tag, Hash, Upload, Car, Package, RotateCcw, UserPlus } from 'lucide-react'
+import { ArrowLeft, Edit, Trash2, Battery, Wrench, Building, Tag, Hash, Upload, Car, Package, RotateCcw, UserPlus, FileDown } from 'lucide-react'
+import { jsPDF } from 'jspdf'
 import './RadioDetails.css'
 
 export default function RadioDetails() {
@@ -29,6 +30,7 @@ export default function RadioDetails() {
   const [showDepartmentModal, setShowDepartmentModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  const [lastPdfGenerated, setLastPdfGenerated] = useState<{ by: string; at: string } | null>(null)
 
   const { data: radio, isLoading, error } = useQuery({
     queryKey: ['radio', id],
@@ -159,6 +161,112 @@ export default function RadioDetails() {
     }
   }
 
+  const getHistoryActionLabel = (action: string) => {
+    return getActionLabel(action)
+  }
+
+  const handleGeneratePdf = () => {
+    if (!radio) return
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' })
+    const pageWidth = doc.internal.pageSize.getWidth()
+    const margin = 15
+    const maxWidth = pageWidth - 2 * margin
+    let y = 20
+    const lineHeight = 6
+
+    const addText = (text: string, fontSize = 10, isBold = false) => {
+      doc.setFontSize(fontSize)
+      doc.setFont('helvetica', isBold ? 'bold' : 'normal')
+      const lines = doc.splitTextToSize(text, maxWidth)
+      for (const line of lines) {
+        if (y > 277) {
+          doc.addPage()
+          y = 20
+        }
+        doc.text(line, margin, y)
+        y += lineHeight
+      }
+    }
+
+    const addSpacing = (mm = 4) => {
+      y += mm
+    }
+
+    // Header: Korps Politie Suriname
+    addText('Korps Politie Suriname', 14, true)
+    addText('Structuur: Bedrijfsvoering', 10)
+    addText('Afdeling: Bureau Systeem Techniek', 10)
+    addSpacing(8)
+
+    // Radio Details
+    addText('Radio Details', 12, true)
+    addSpacing(4)
+    addText(`ID: ${radio.id}`)
+    addText(`Merk: ${radio.merk}`)
+    addText(`Model: ${radio.model}`)
+    addText(`Type: ${radio.type}`)
+    addText(`Serienummer: ${radio.serienummer}`)
+    addText(`Alias: ${radio.alias}`)
+    addText(`Afdeling: ${radio.afdeling}`)
+    addText(`Organisatie: ${radio.groep || '-'}`)
+    addText(`Structuur: ${radio.structuur || '-'}`)
+    if (radio.type === 'Mobile') {
+      addText(`Voertuig: ${radio.voertuig || '-'}`)
+    }
+    addText(`Registratiedatum: ${new Date(radio.registratiedatum).toLocaleDateString('nl-NL')}`)
+    addText(`Status: ${radio.status}`)
+    addText(`Opmerking: ${radio.opmerking || '-'}`)
+    addText(`Toegevoegd door: ${radio.added_by ?? '-'}`)
+    addSpacing(8)
+
+    // Geschiedenis
+    addText('Geschiedenis', 12, true)
+    addSpacing(4)
+    if (history && history.length > 0) {
+      for (const entry of history) {
+        addText(`${getHistoryActionLabel(entry.action)} - ${new Date(entry.timestamp).toLocaleString('nl-NL')}${entry.executed_by ? ` (door ${entry.executed_by})` : ''}`)
+        addText(entry.description)
+        if (entry.details) {
+          const detailParts: string[] = []
+          if (entry.details.service_date) detailParts.push(`Datum: ${new Date(entry.details.service_date).toLocaleDateString('nl-NL')}`)
+          if (entry.details.naam) detailParts.push(`Naam: ${entry.details.naam}`)
+          if (entry.details.voornaam) detailParts.push(`Voornaam: ${entry.details.voornaam}`)
+          if (entry.details.telefoonnummer) detailParts.push(`Telefoonnummer: ${entry.details.telefoonnummer}`)
+          if (entry.details.rang_functie) detailParts.push(`Rang/Functie: ${entry.details.rang_functie}`)
+          if (entry.details.accessory_info) detailParts.push(`Accessoire: ${entry.details.accessory_info}`)
+          if (entry.details.quantity != null) detailParts.push(`Aantal: ${entry.details.quantity}`)
+          if (entry.details.notes) detailParts.push(`Opmerking: ${entry.details.notes}`)
+          if (entry.details.old_value) detailParts.push(`Van: ${entry.details.old_value}`)
+          if (entry.details.new_value) detailParts.push(`Naar: ${entry.details.new_value}`)
+          if (entry.details.vehicle_info) detailParts.push(`Voertuig: ${entry.details.vehicle_info.merk} ${entry.details.vehicle_info.model}`)
+          if (entry.details.reden_van_inlevering) detailParts.push(`Reden: ${entry.details.reden_van_inlevering}`)
+          if (entry.details.reden) detailParts.push(`Reden: ${entry.details.reden}`)
+          if (entry.details.reden_van_toewijzing) detailParts.push(`Reden: ${entry.details.reden_van_toewijzing}`)
+          if ('previous_afdeling' in entry.details && entry.details.previous_afdeling) detailParts.push(`Vorige afdeling: ${entry.details.previous_afdeling}`)
+          if ('previous_groep' in entry.details && entry.details.previous_groep) detailParts.push(`Vorige organisatie: ${entry.details.previous_groep}`)
+          if ('previous_structuur' in entry.details && entry.details.previous_structuur) detailParts.push(`Vorige structuur: ${entry.details.previous_structuur}`)
+          if ('previous_voertuig' in entry.details && entry.details.previous_voertuig) detailParts.push(`Vorige voertuig: ${entry.details.previous_voertuig}`)
+          if (detailParts.length > 0) {
+            addText(detailParts.join(' | '))
+          }
+        }
+        addSpacing(4)
+      }
+    } else {
+      addText('Geen geschiedenis beschikbaar')
+    }
+
+    addSpacing(12)
+    // Footer: gegenereerd door en datum
+    const generatedBy = user?.username ?? 'Onbekend'
+    const generatedAt = new Date().toLocaleString('nl-NL')
+    addText(`PDF gegenereerd door: ${generatedBy}`, 9)
+    addText(`Datum: ${generatedAt}`, 9)
+
+    doc.save(`Radio-${radio.id}-${new Date().toISOString().slice(0, 10)}.pdf`)
+    setLastPdfGenerated({ by: generatedBy, at: generatedAt })
+  }
+
   if (isLoading) {
     return (
       <div className="loading-container">
@@ -190,8 +298,16 @@ export default function RadioDetails() {
           Terug
         </button>
         <h1 className="page__title">Radio Details</h1>
-        {isSuperUserOrAdmin() && (
         <div className="page__actions">
+          <button
+            onClick={handleGeneratePdf}
+            className="btn btn--secondary"
+            title="PDF genereren"
+          >
+            <FileDown size={20} />
+            PDF
+          </button>
+          {isSuperUserOrAdmin() && (
           <button
             onClick={handleDelete}
             className="btn btn--danger"
@@ -200,9 +316,15 @@ export default function RadioDetails() {
             <Trash2 size={20} />
             {t('common.delete')}
           </button>
+          )}
         </div>
-        )}
       </div>
+
+      {lastPdfGenerated && (
+        <div className="radio-details__pdf-info">
+          PDF gegenereerd door <strong>{lastPdfGenerated.by}</strong> op {lastPdfGenerated.at}
+        </div>
+      )}
 
       <div className="radio-details">
         <div className="radio-details__main">
@@ -320,12 +442,12 @@ export default function RadioDetails() {
 
         {isSuperUserOrAdmin() && (
         <div className="radio-details__actions">
-          <div className="card">
+          <div className="radio-details__card">
             <div className="card__header">
               <h3 className="card__title">Snelle Acties</h3>
             </div>
-            <div className="card__body">
-              <div className="action-buttons">
+            <div className="action-card__body">
+              <div className="radio-details__action-buttons">
                 <button
                   onClick={handleBatteryReplacement}
                   className="btn btn--secondary"

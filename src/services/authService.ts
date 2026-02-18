@@ -10,6 +10,7 @@ import type {
   UserPageVisibility,
   UserPageKey,
   SessionTimeoutMinutes,
+  SessionTimeoutType,
 } from '../types'
 import { USER_PAGE_KEYS } from '../types'
 
@@ -62,6 +63,7 @@ export const authService = {
       created_at: row.created_at,
       updated_at: row.updated_at,
       session_timeout_minutes: (row.session_timeout_minutes as SessionTimeoutMinutes) ?? null,
+      session_timeout_type: (row.session_timeout_type as SessionTimeoutType) ?? 'since_login',
       telefoonnummer: row.telefoonnummer ?? undefined,
       rang: row.rang ?? undefined,
       organisatie: row.organisatie ?? undefined,
@@ -111,6 +113,7 @@ export const authService = {
       created_at: row.created_at,
       updated_at: row.updated_at,
       session_timeout_minutes: (row.session_timeout_minutes as SessionTimeoutMinutes) ?? null,
+      session_timeout_type: (row.session_timeout_type as SessionTimeoutType) ?? 'since_login',
       telefoonnummer: row.telefoonnummer ?? undefined,
       rang: row.rang ?? undefined,
       organisatie: row.organisatie ?? undefined,
@@ -198,6 +201,7 @@ export const authService = {
       created_at: row.created_at as string,
       updated_at: row.updated_at as string,
       session_timeout_minutes: (row.session_timeout_minutes as SessionTimeoutMinutes) ?? null,
+      session_timeout_type: ((row as { session_timeout_type?: string }).session_timeout_type as SessionTimeoutType) ?? 'since_login',
       telefoonnummer: (row.telefoonnummer as string) ?? undefined,
       rang: (row.rang as string) ?? undefined,
       organisatie: (row.organisatie as string) ?? undefined,
@@ -292,14 +296,17 @@ export const authService = {
 
   /**
    * Set session timeout for a user (admin). 10, 30, 60 minutes or null (never).
+   * Type: since_login = timeout since login; inactivity = timeout after last activity.
    */
   async setUserSessionTimeout(
     userId: string,
-    sessionTimeoutMinutes: SessionTimeoutMinutes
+    sessionTimeoutMinutes: SessionTimeoutMinutes,
+    sessionTimeoutType: SessionTimeoutType = 'since_login'
   ): Promise<void> {
     const { error } = await supabase.rpc('set_user_session_timeout', {
       p_user_id: userId,
       p_session_timeout_minutes: sessionTimeoutMinutes,
+      p_session_timeout_type: sessionTimeoutType,
     })
     if (error) throw new Error(error.message)
   },

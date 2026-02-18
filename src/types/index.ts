@@ -10,6 +10,7 @@ export const USER_PAGE_KEYS = [
   'organizations',
   'radio_archive',
   'telefoon',
+  'phone_numbers',
 ] as const
 
 export type UserPageKey = (typeof USER_PAGE_KEYS)[number]
@@ -18,6 +19,9 @@ export type UserPageVisibility = Record<UserPageKey, boolean>
 
 /** Session timeout in minutes. null = never expire. */
 export type SessionTimeoutMinutes = 10 | 30 | 60 | null
+
+/** When to apply session timeout: since login or after inactivity. */
+export type SessionTimeoutType = 'since_login' | 'inactivity'
 
 export interface AppUser {
   id: string
@@ -35,6 +39,8 @@ export interface AppUser {
   updated_at: string
   /** Minutes until auto logout. null = never. */
   session_timeout_minutes?: SessionTimeoutMinutes
+  /** 'since_login' = timeout since login; 'inactivity' = timeout after last activity. */
+  session_timeout_type?: SessionTimeoutType
   telefoonnummer?: string
   rang?: string
   organisatie?: string
@@ -70,6 +76,7 @@ export interface UpdateUserData {
   role?: 'admin' | 'super_user' | 'user'
   is_active?: boolean
   session_timeout_minutes?: SessionTimeoutMinutes
+  session_timeout_type?: SessionTimeoutType
   telefoonnummer?: string
   rang?: string
   organisatie?: string
@@ -504,6 +511,46 @@ export interface OrganizationStats {
   total_groepen: number
   total_structuren: number
   total_afdelingen: number
+}
+
+// Phone numbers (telefoonnummers beheer - los van telefoontoestellen)
+export type PhoneNumberStatus = 'actief' | 'buiten werking' | 'defect' | 'inactief'
+
+export interface PhoneNumber {
+  id: string
+  contactpersoon: string
+  organisatie?: string
+  structuur?: string
+  afdeling?: string
+  tel_nummer: string
+  status: PhoneNumberStatus
+  opmerking?: string
+  accountnummer?: string
+  rang?: string
+  functie?: string
+  adres?: string
+  pand_no?: string
+  extensie?: string
+  tags?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface PhoneNumberFormData {
+  contactpersoon: string
+  organisatie?: string
+  structuur?: string
+  afdeling?: string
+  tel_nummer: string
+  status: PhoneNumberStatus
+  opmerking?: string
+  accountnummer?: string
+  rang?: string
+  functie?: string
+  adres?: string
+  pand_no?: string
+  extensie?: string
+  tags?: string
 }
 
 // Inventory types
