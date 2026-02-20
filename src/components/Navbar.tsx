@@ -51,6 +51,7 @@ export default function Navbar() {
     { path: '/installation', label: t('nav.installation'), icon: Wrench },
   ]
   const mainNavItems = allMainNavItems.filter((item) => isPageVisible(item.path))
+  const mainNavItemsDesktop = mainNavItems.filter((item) => item.path !== '/installation')
 
   const radioArchiveItem = { path: '/radio-archive', label: 'Radio archief', icon: ArchiveRestore }
   const showRadioArchive = isPageVisible('/radio-archive')
@@ -111,7 +112,7 @@ export default function Navbar() {
         
         {/* Desktop Menu */}
         <div className="navbar__menu navbar__menu--desktop">
-          {mainNavItems.map(({ path, label, icon: Icon }) => (
+          {mainNavItemsDesktop.map(({ path, label, icon: Icon }) => (
             <Link
               key={path}
               to={path}

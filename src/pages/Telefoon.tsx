@@ -46,18 +46,18 @@ const COLUMN_LABELS: Record<keyof ColumnVisibility, string> = {
 }
 
 const DEFAULT_COLUMN_VISIBILITY: ColumnVisibility = {
-  merk: true,
+  merk: false,
   model: true,
   type: true,
-  serienummer: true,
+  serienummer: false,
   telefoonnummer: true,
-  provider: true,
-  organisatie: true,
+  provider: false,
+  organisatie: false,
   structuur: false,
   afdeling: true,
   voertuig: false,
   status: true,
-  registratiedatum: true,
+  registratiedatum: false,
   opmerking: false,
   added_by: false,
 }

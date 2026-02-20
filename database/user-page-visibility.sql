@@ -2,12 +2,7 @@
 -- Run after auth-system-rpc-extensions.sql.
 -- Default: role 'user' = all pages hidden; admin/super_user = all visible (unless a row overrides).
 --
--- Bestaande installatie (als de tabel al bestond vóór 'radio_archive'): voer alleen onderstaande uit:
---   ALTER TABLE user_page_visibility DROP CONSTRAINT IF EXISTS chk_page_key;
---   ALTER TABLE user_page_visibility ADD CONSTRAINT chk_page_key CHECK (page_key IN (
---     'storingen', 'installation', 'issue', 'accessories', 'inventory', 'brands', 'organizations', 'radio_archive', 'telefoon'
---   ));
--- Daarna de functie get_user_page_visibility opnieuw uitvoeren (zie sectie 2).
+-- Bestaande installatie: voer sectie 2 (functie get_user_page_visibility) opnieuw uit om phone_numbers toe te voegen.
 
 -- =============================================================================
 -- 1. user_page_visibility table
@@ -18,7 +13,7 @@ CREATE TABLE IF NOT EXISTS user_page_visibility (
   visible BOOLEAN NOT NULL DEFAULT true,
   PRIMARY KEY (user_id, page_key),
   CONSTRAINT chk_page_key CHECK (page_key IN (
-    'storingen', 'installation', 'issue', 'accessories', 'inventory', 'brands', 'organizations', 'radio_archive', 'telefoon'
+    'storingen', 'installation', 'issue', 'accessories', 'inventory', 'brands', 'organizations', 'radio_archive', 'telefoon', 'phone_numbers'
   ))
 );
 
@@ -27,6 +22,7 @@ CREATE INDEX IF NOT EXISTS idx_user_page_visibility_user_id ON user_page_visibil
 -- =============================================================================
 -- 2. get_user_page_visibility – one row per page_key.
 --    If a row exists: use it. Else: default visible = true for admin/super_user, false for role 'user'.
+--    phone_numbers (Telefoonnummers): standaard altijd zichtbaar voor nieuwe gebruikers.
 -- =============================================================================
 CREATE OR REPLACE FUNCTION get_user_page_visibility(p_user_id UUID)
 RETURNS TABLE (page_key TEXT, visible BOOLEAN) AS $$
@@ -34,10 +30,13 @@ BEGIN
   RETURN QUERY
   SELECT
     k.page_key,
-    COALESCE(v.visible, (u.role <> 'user'))
+    CASE
+      WHEN k.page_key = 'phone_numbers' THEN COALESCE(v.visible, true)
+      ELSE COALESCE(v.visible, (u.role <> 'user'))
+    END
   FROM (VALUES
     ('storingen'::TEXT), ('installation'::TEXT), ('issue'::TEXT), ('accessories'::TEXT),
-    ('inventory'::TEXT), ('brands'::TEXT), ('organizations'::TEXT), ('radio_archive'::TEXT), ('telefoon'::TEXT)
+    ('inventory'::TEXT), ('brands'::TEXT), ('organizations'::TEXT), ('radio_archive'::TEXT), ('telefoon'::TEXT), ('phone_numbers'::TEXT)
   ) AS k(page_key)
   CROSS JOIN app_users u
   LEFT JOIN user_page_visibility v ON v.user_id = p_user_id AND v.page_key = k.page_key

@@ -55,6 +55,14 @@ export interface LoginCredentials {
   password: string
 }
 
+export interface SignupData {
+  username: string
+  email: string
+  first_name: string
+  last_name: string
+  password: string
+}
+
 export interface CreateUserData {
   username: string
   email: string

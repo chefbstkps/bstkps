@@ -46,19 +46,19 @@ const COLUMN_LABELS: Record<keyof ColumnVisibility, string> = {
 }
 
 const DEFAULT_COLUMN_VISIBILITY: ColumnVisibility = {
-  organisatie: true,
-  structuur: true,
+  organisatie: false,
+  structuur: false,
   afdeling: true,
   tel_nummer: true,
   extensie: true,
-  accountnummer: true,
-  contactpersoon: true,
+  accountnummer: false,
+  contactpersoon: false,
   rang: false,
-  functie: true,
+  functie: false,
   adres: false,
   pand_no: false,
-  status: true,
-  tags: true,
+  status: false,
+  tags: false,
   opmerking: false,
 }
 
@@ -72,7 +72,7 @@ export default function PhoneNumbers() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 12
+  const [itemsPerPage, setItemsPerPage] = useState(12)
   const [showColumnMenu, setShowColumnMenu] = useState(false)
   const [showImportModal, setShowImportModal] = useState(false)
   const columnMenuRef = useRef<HTMLDivElement>(null)
@@ -146,9 +146,36 @@ export default function PhoneNumbers() {
     setColumnVisibility((prev) => ({ ...prev, [column]: !prev[column] }))
   }
 
-  const totalPages = Math.ceil(allFilteredItems.length / itemsPerPage)
+  const totalItems = allFilteredItems.length
+  const totalPages = Math.ceil(totalItems / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
-  const filteredItems = allFilteredItems.slice(startIndex, startIndex + itemsPerPage)
+  const endIndex = startIndex + itemsPerPage
+  const filteredItems = allFilteredItems.slice(startIndex, endIndex)
+
+  const getPageNumbers = () => {
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1)
+    }
+    const pages: (number | string)[] = []
+    if (currentPage <= 4) {
+      for (let i = 1; i <= 5; i++) pages.push(i)
+      pages.push('...')
+      pages.push(totalPages)
+    } else if (currentPage >= totalPages - 3) {
+      pages.push(1)
+      pages.push('...')
+      for (let i = totalPages - 4; i <= totalPages; i++) pages.push(i)
+    } else {
+      pages.push(1)
+      pages.push('...')
+      pages.push(currentPage - 1)
+      pages.push(currentPage)
+      pages.push(currentPage + 1)
+      pages.push('...')
+      pages.push(totalPages)
+    }
+    return pages
+  }
 
   const handleEdit = (item: PhoneNumber) => {
     setEditingItem(item)
@@ -351,32 +378,69 @@ export default function PhoneNumbers() {
               )}
             </tbody>
           </table>
+
+          {totalPages > 1 && (
+            <div className="pagination-container">
+              <div className="pagination-info">
+                Toon {startIndex + 1}-{Math.min(endIndex, totalItems)} van {totalItems} telefoonnummers
+              </div>
+              <div className="pagination-controls">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="pagination-btn pagination-btn--nav"
+                  title="Vorige pagina"
+                >
+                  ‹
+                </button>
+                {getPageNumbers().map((page, index) =>
+                  typeof page === 'number' ? (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => setCurrentPage(page)}
+                      className={`pagination-btn ${currentPage === page ? 'pagination-btn--active' : ''}`}
+                    >
+                      {page}
+                    </button>
+                  ) : (
+                    <span key={index} className="pagination-ellipsis">
+                      {page}
+                    </span>
+                  )
+                )}
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="pagination-btn pagination-btn--nav"
+                  title="Volgende pagina"
+                >
+                  ›
+                </button>
+              </div>
+              <div className="pagination-page-size">
+                <label htmlFor="phonePageSize">Items per pagina:</label>
+                <select
+                  id="phonePageSize"
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    setItemsPerPage(Number(e.target.value))
+                    setCurrentPage(1)
+                  }}
+                  className="pagination-select"
+                >
+                  <option value={12}>12</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+              </div>
+            </div>
+          )}
         </div>
       </div>
-
-      {totalPages > 1 && (
-        <div className="pagination">
-          <button
-            type="button"
-            className="btn btn--secondary"
-            disabled={currentPage <= 1}
-            onClick={() => setCurrentPage((p) => p - 1)}
-          >
-            Vorige
-          </button>
-          <span className="pagination__info">
-            Pagina {currentPage} van {totalPages}
-          </span>
-          <button
-            type="button"
-            className="btn btn--secondary"
-            disabled={currentPage >= totalPages}
-            onClick={() => setCurrentPage((p) => p + 1)}
-          >
-            Volgende
-          </button>
-        </div>
-      )}
 
       {showAddModal && (
         <PhoneNumberModal

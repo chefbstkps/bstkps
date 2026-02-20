@@ -8,6 +8,7 @@ import PageVisibilityGuard from './components/PageVisibilityGuard'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import Login from './pages/Login'
+import Signup from './pages/Signup'
 import Profile from './pages/Profile'
 import UserManagement from './pages/UserManagement'
 import UserDetails from './pages/UserDetails'
@@ -52,6 +53,7 @@ function App() {
             <Router>
               <Routes>
                 <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<Signup />} />
                 <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/profile" element={<Profile />} />

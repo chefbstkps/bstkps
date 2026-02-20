@@ -2,6 +2,7 @@ import { supabase } from '../lib/supabase'
 import type {
   AppUser,
   LoginCredentials,
+  SignupData,
   CreateUserData,
   UpdateUserData,
   ChangePasswordData,
@@ -208,6 +209,21 @@ export const authService = {
       structuur: (row.structuur as string) ?? undefined,
       afdeling: (row.afdeling as string) ?? undefined,
     }))
+  },
+
+  /**
+   * Signup: public registration. Creates user with is_active=false.
+   * User can only log in after admin approval (is_active=true).
+   */
+  async signup(data: SignupData): Promise<void> {
+    const { error } = await supabase.rpc('signup_user', {
+      p_username: data.username,
+      p_email: data.email,
+      p_first_name: data.first_name,
+      p_last_name: data.last_name,
+      p_password: data.password,
+    })
+    if (error) throw new Error(error.message)
   },
 
   /**

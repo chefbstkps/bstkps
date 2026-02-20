@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { LogIn, Eye, EyeOff } from 'lucide-react'
 import './Login.css'
@@ -108,6 +108,10 @@ export default function Login() {
               </>
             )}
           </button>
+
+          <p className="login-form__signup-link">
+            Nog geen account? <Link to="/signup">Registreren</Link>
+          </p>
         </form>
       </div>
     </div>
