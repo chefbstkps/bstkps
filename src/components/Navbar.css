@@ -324,6 +324,12 @@
   display: block;
 }
 
+@media (max-width: 1023px) {
+  .navbar__title {
+    display: none;
+  }
+}
+
 @media (max-width: 768px) {
   .navbar__container {
     flex-direction: row;

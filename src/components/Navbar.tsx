@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useAuth } from '../contexts/AuthContext'
-import { Radio, Package, Upload, Wrench, Home, LogOut, Tag, Menu, X, AlertTriangle, Building2, Archive, ArchiveRestore, User, Users, ClipboardList, ShieldCheck, ChevronDown, Smartphone, Phone } from 'lucide-react'
+import { Radio, Package, Upload, Wrench, Home, LogOut, Tag, Menu, X, AlertTriangle, Building2, Archive, ArchiveRestore, User, Users, ClipboardList, ShieldCheck, ChevronDown, Smartphone, Phone, History } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import './Navbar.css'
 
@@ -31,6 +31,7 @@ export default function Navbar() {
     '/brands': 'brands',
     '/organizations': 'organizations',
     '/radio-archive': 'radio_archive',
+    '/radio-history': 'radio_history',
     '/telefoon': 'telefoon',
     '/phone-numbers': 'phone_numbers',
   }
@@ -55,6 +56,8 @@ export default function Navbar() {
 
   const radioArchiveItem = { path: '/radio-archive', label: 'Radio archief', icon: ArchiveRestore }
   const showRadioArchive = isPageVisible('/radio-archive')
+  const radioHistoryItem = { path: '/radio-history', label: 'Radio geschiedenis', icon: History }
+  const showRadioHistory = isPageVisible('/radio-history')
 
   const allSecondaryNavItems = [
     { path: '/profile', label: 'Mijn profiel', icon: User },
@@ -175,6 +178,19 @@ export default function Navbar() {
                 >
                   <Icon className="navbar__icon" />
                   <span className="navbar__text">{radioArchiveItem.label}</span>
+                </Link>
+              )
+            })()}
+            {showRadioHistory && (() => {
+              const Icon = radioHistoryItem.icon
+              return (
+                <Link
+                  to={radioHistoryItem.path}
+                  className={`navbar__link ${location.pathname === radioHistoryItem.path || location.pathname.startsWith(radioHistoryItem.path + '/') ? 'navbar__link--active' : ''}`}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <Icon className="navbar__icon" />
+                  <span className="navbar__text">{radioHistoryItem.label}</span>
                 </Link>
               )
             })()}

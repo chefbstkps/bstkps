@@ -22,6 +22,8 @@ import PhoneNumbers from './pages/PhoneNumbers'
 import PhoneNumberDetails from './pages/PhoneNumberDetails'
 import RadioArchive from './pages/RadioArchive'
 import RadioArchiveDetails from './pages/RadioArchiveDetails'
+import RadioHistory from './pages/RadioHistory'
+import RadioHistoryDetails from './pages/RadioHistoryDetails'
 import Accessories from './pages/Accessories'
 import Brands from './pages/Brands'
 import Organizations from './pages/Organizations'
@@ -68,6 +70,8 @@ function App() {
                   <Route path="/phone-numbers/:id" element={<PhoneNumberDetails />} />
                   <Route path="/radio-archive" element={<RadioArchive />} />
                   <Route path="/radio-archive/:id" element={<RadioArchiveDetails />} />
+                  <Route path="/radio-history" element={<RadioHistory />} />
+                  <Route path="/radio-history/:id" element={<RadioHistoryDetails />} />
                   <Route path="/accessories" element={<Accessories />} />
                   <Route path="/brands" element={<Brands />} />
                   <Route path="/organizations" element={<Organizations />} />

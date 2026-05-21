@@ -21,6 +21,7 @@ const PAGE_LABELS: Record<UserPageKey, string> = {
   brands: 'Merken',
   organizations: 'Organisatie',
   radio_archive: 'Radio archief',
+  radio_history: 'Radio geschiedenis',
   telefoon: 'Telefoon',
   phone_numbers: 'Telefoonnummers',
 }
@@ -46,6 +47,7 @@ const defaultVisibility: UserPageVisibility = {
   brands: true,
   organizations: true,
   radio_archive: true,
+  radio_history: true,
   telefoon: true,
   phone_numbers: true,
 }

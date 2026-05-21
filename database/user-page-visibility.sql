@@ -2,7 +2,7 @@
 -- Run after auth-system-rpc-extensions.sql.
 -- Default: role 'user' = all pages hidden; admin/super_user = all visible (unless a row overrides).
 --
--- Bestaande installatie: voer sectie 2 (functie get_user_page_visibility) opnieuw uit om phone_numbers toe te voegen.
+-- Bestaande installatie: voer sectie 2 (functie get_user_page_visibility) opnieuw uit om nieuwe pagina's toe te voegen.
 
 -- =============================================================================
 -- 1. user_page_visibility table
@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS user_page_visibility (
   visible BOOLEAN NOT NULL DEFAULT true,
   PRIMARY KEY (user_id, page_key),
   CONSTRAINT chk_page_key CHECK (page_key IN (
-    'storingen', 'installation', 'issue', 'accessories', 'inventory', 'brands', 'organizations', 'radio_archive', 'telefoon', 'phone_numbers'
+    'storingen', 'installation', 'issue', 'accessories', 'inventory', 'brands', 'organizations', 'radio_archive', 'radio_history', 'telefoon', 'phone_numbers'
   ))
 );
 
@@ -36,7 +36,7 @@ BEGIN
     END
   FROM (VALUES
     ('storingen'::TEXT), ('installation'::TEXT), ('issue'::TEXT), ('accessories'::TEXT),
-    ('inventory'::TEXT), ('brands'::TEXT), ('organizations'::TEXT), ('radio_archive'::TEXT), ('telefoon'::TEXT), ('phone_numbers'::TEXT)
+    ('inventory'::TEXT), ('brands'::TEXT), ('organizations'::TEXT), ('radio_archive'::TEXT), ('radio_history'::TEXT), ('telefoon'::TEXT), ('phone_numbers'::TEXT)
   ) AS k(page_key)
   CROSS JOIN app_users u
   LEFT JOIN user_page_visibility v ON v.user_id = p_user_id AND v.page_key = k.page_key

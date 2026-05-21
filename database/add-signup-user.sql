@@ -10,7 +10,12 @@ CREATE OR REPLACE FUNCTION signup_user(
   p_email TEXT,
   p_first_name TEXT,
   p_last_name TEXT,
-  p_password TEXT
+  p_password TEXT,
+  p_telefoonnummer TEXT DEFAULT NULL,
+  p_rang TEXT DEFAULT NULL,
+  p_organisatie TEXT DEFAULT NULL,
+  p_structuur TEXT DEFAULT NULL,
+  p_afdeling TEXT DEFAULT NULL
 )
 RETURNS UUID AS $$
 DECLARE
@@ -34,7 +39,12 @@ BEGIN
     password_hash,
     role,
     is_active,
-    must_change_password
+    must_change_password,
+    telefoonnummer,
+    rang,
+    organisatie,
+    structuur,
+    afdeling
   )
   VALUES (
     TRIM(p_username),
@@ -44,7 +54,12 @@ BEGIN
     hash_password(p_password),
     'user',
     false,  -- Not active until admin approves
-    true
+    true,
+    NULLIF(TRIM(p_telefoonnummer), ''),
+    NULLIF(TRIM(p_rang), ''),
+    NULLIF(TRIM(p_organisatie), ''),
+    NULLIF(TRIM(p_structuur), ''),
+    NULLIF(TRIM(p_afdeling), '')
   )
   RETURNING id INTO v_id;
   RETURN v_id;
@@ -52,4 +67,4 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Allow anonymous users to call signup_user
-GRANT EXECUTE ON FUNCTION signup_user(TEXT, TEXT, TEXT, TEXT, TEXT) TO anon;
+GRANT EXECUTE ON FUNCTION signup_user(TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT) TO anon;

@@ -9,6 +9,7 @@ export const USER_PAGE_KEYS = [
   'brands',
   'organizations',
   'radio_archive',
+  'radio_history',
   'telefoon',
   'phone_numbers',
 ] as const
@@ -48,6 +49,8 @@ export interface AppUser {
   afdeling?: string
   /** Which pages are visible in nav (admin-configurable). Undefined = all visible. */
   page_visibility?: UserPageVisibility
+  /** Remote logout: sessions with logged_in_at before this time are invalid. */
+  sessions_invalidated_at?: string | null
 }
 
 export interface LoginCredentials {
@@ -61,6 +64,11 @@ export interface SignupData {
   first_name: string
   last_name: string
   password: string
+  telefoonnummer?: string
+  rang?: string
+  organisatie?: string
+  structuur?: string
+  afdeling?: string
 }
 
 export interface CreateUserData {
@@ -107,7 +115,7 @@ export interface UserActivityLogEntry {
   id: string
   user_id: string
   username: string
-  activity_type: 'login' | 'logout' | 'password_change' | 'profile_update'
+  activity_type: 'login' | 'logout' | 'password_change' | 'profile_update' | 'invalidate_other_sessions'
   success: boolean
   error_message: string | null
   created_at: string

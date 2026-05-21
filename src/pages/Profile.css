@@ -78,6 +78,20 @@
   padding: 1.5rem;
 }
 
+.profile-sessions__title {
+  margin: 0 0 0.75rem 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.profile-sessions__text {
+  margin: 0 0 1.25rem 0;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  font-size: 0.95rem;
+}
+
 .profile-form__grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

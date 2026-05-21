@@ -25,6 +25,58 @@ Een moderne web applicatie voor het beheren van radiocommunicatie apparatuur en 
 - **Deployment**: Vercel
 - **Icons**: Lucide React
 
+## Kleurenpalet
+
+De app gebruikt een dark theme met onderstaande kleuren (gedefinieerd in `src/index.css`):
+
+### Primaire & semantische kleuren
+
+| Variabele | Hex | Gebruik |
+|-----------|-----|---------|
+| `--color-primary` | `#0066cc` | Links, primaire knoppen, focus states |
+| `--color-primary-hover` | `#0052a3` | Hover op primaire knoppen |
+| `--color-secondary` | `#6c757d` | Secundaire knoppen, neutrale elementen |
+| `--color-success` | `#28a745` | Succes, actief, bevestiging |
+| `--color-warning` | `#ffc107` | Waarschuwing, aandacht |
+| `--color-danger` | `#dc3545` | Fout, verwijderen, gevaar |
+| `--color-info` | `#17a2b8` | Informatie, info badges |
+
+### Achtergrond
+
+| Variabele | Hex | Gebruik |
+|-----------|-----|---------|
+| `--color-bg-primary` | `#0a0a0a` | Hoofdachtergrond (body, page) |
+| `--color-bg-secondary` | `#1a1a1a` | Kaarten, formulieren, navbar |
+| `--color-bg-tertiary` | `#2a2a2a` | Table headers, modale headers |
+| `--color-bg-hover` | `#333` | Hover op rijen, knoppen |
+
+### Tekst
+
+| Variabele | Hex | Gebruik |
+|-----------|-----|---------|
+| `--color-text-primary` | `#fff` | Hoofdtekst |
+| `--color-text-secondary` | `#ccc` | Secundaire tekst |
+| `--color-text-muted` | `#999` | Placeholders, gedempte tekst |
+
+### Borders
+
+| Variabele | Hex | Gebruik |
+|-----------|-----|---------|
+| `--color-border` | `#333` | Standaard borders |
+| `--color-border-light` | `#444` | Lichtere borders |
+
+### Overige kleuren (status badges, validatie, etc.)
+
+| Kleur | Hex | Gebruik |
+|-------|-----|---------|
+| Valid/success (light) | `#10b981` | Form validatie, actief staat |
+| Error/invalid (light) | `#ef4444` | Form validatie, foutmeldingen |
+| Error text (light) | `#f8a0a0` | Fouttekst in dark mode |
+| Success text (light) | `#7dd89a` | Succestekst |
+| Danger hover | `#c82333` | Hover op danger-knoppen |
+| Orange (status) | `#ff5722` | Ingetrokken status badge |
+| Gray (status) | `#9e9e9e` | Inactief status badge |
+
 ## Project Structuur
 
 ```

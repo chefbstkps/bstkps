@@ -17,6 +17,41 @@ import { USER_PAGE_KEYS } from '../types'
 
 const ACTIVITY_LOGS_TABLE = 'user_activity_logs'
 
+/** True if localStorage session (loggedInAt) is still valid vs server invalidation. */
+export function isSessionStillValid(
+  loggedInAtMs: number,
+  sessionsInvalidatedAt?: string | null
+): boolean {
+  if (!sessionsInvalidatedAt) return true
+  return loggedInAtMs >= new Date(sessionsInvalidatedAt).getTime()
+}
+
+function mapUserRow(row: Record<string, unknown>): AppUser {
+  return {
+    id: row.id as string,
+    username: row.username as string,
+    email: row.email as string,
+    first_name: (row.first_name as string) ?? '',
+    last_name: (row.last_name as string) ?? '',
+    role: row.role as AppUser['role'],
+    is_active: row.is_active as boolean,
+    must_change_password: row.must_change_password as boolean,
+    last_login: row.last_login as string | undefined,
+    last_login_ip: (row.last_login_ip as string) ?? undefined,
+    last_login_user_agent: (row.last_login_user_agent as string) ?? undefined,
+    created_at: row.created_at as string,
+    updated_at: row.updated_at as string,
+    session_timeout_minutes: (row.session_timeout_minutes as SessionTimeoutMinutes) ?? null,
+    session_timeout_type: ((row.session_timeout_type as string) ?? 'since_login') as SessionTimeoutType,
+    telefoonnummer: (row.telefoonnummer as string) ?? undefined,
+    rang: (row.rang as string) ?? undefined,
+    organisatie: (row.organisatie as string) ?? undefined,
+    structuur: (row.structuur as string) ?? undefined,
+    afdeling: (row.afdeling as string) ?? undefined,
+    sessions_invalidated_at: (row.sessions_invalidated_at as string) ?? null,
+  }
+}
+
 export const authService = {
   /**
    * Validate credentials and return user. Uses RPC login_user (checks password in DB).
@@ -49,28 +84,7 @@ export const authService = {
       throw new Error('Ongeldige gebruikersnaam of wachtwoord')
     }
 
-    const user: AppUser = {
-      id: row.id,
-      username: row.username,
-      email: row.email,
-      first_name: row.first_name ?? '',
-      last_name: row.last_name ?? '',
-      role: row.role,
-      is_active: row.is_active,
-      must_change_password: row.must_change_password,
-      last_login: row.last_login,
-      last_login_ip: row.last_login_ip ?? undefined,
-      last_login_user_agent: row.last_login_user_agent ?? undefined,
-      created_at: row.created_at,
-      updated_at: row.updated_at,
-      session_timeout_minutes: (row.session_timeout_minutes as SessionTimeoutMinutes) ?? null,
-      session_timeout_type: (row.session_timeout_type as SessionTimeoutType) ?? 'since_login',
-      telefoonnummer: row.telefoonnummer ?? undefined,
-      rang: row.rang ?? undefined,
-      organisatie: row.organisatie ?? undefined,
-      structuur: row.structuur ?? undefined,
-      afdeling: row.afdeling ?? undefined,
-    }
+    const user = mapUserRow(row as Record<string, unknown>)
 
     await this.logActivity(user.id, 'login', true, undefined, ip || null, userAgent || null)
     return user
@@ -83,6 +97,21 @@ export const authService = {
     if (userId) {
       await this.logActivity(userId, 'logout', true)
     }
+  },
+
+  /**
+   * Invalidate localStorage sessions on other browsers. Returns server timestamp;
+   * caller should set bst_logged_in_at to this value for the current browser.
+   */
+  async invalidateOtherSessions(userId: string): Promise<string> {
+    const { data, error } = await supabase.rpc('invalidate_other_sessions', {
+      p_user_id: userId,
+    })
+    if (error) throw new Error(error.message || 'Uitloggen op andere apparaten mislukt')
+    const at = typeof data === 'string' ? data : data == null ? null : String(data)
+    if (!at) throw new Error('Uitloggen op andere apparaten mislukt')
+    await this.logActivity(userId, 'invalidate_other_sessions', true)
+    return at
   },
 
   /**
@@ -99,28 +128,7 @@ export const authService = {
     const row = Array.isArray(data) ? data[0] : data
     if (!row || !row.id) return null
 
-    return {
-      id: row.id,
-      username: row.username,
-      email: row.email,
-      first_name: row.first_name ?? '',
-      last_name: row.last_name ?? '',
-      role: row.role,
-      is_active: row.is_active,
-      must_change_password: row.must_change_password,
-      last_login: row.last_login,
-      last_login_ip: row.last_login_ip ?? undefined,
-      last_login_user_agent: row.last_login_user_agent ?? undefined,
-      created_at: row.created_at,
-      updated_at: row.updated_at,
-      session_timeout_minutes: (row.session_timeout_minutes as SessionTimeoutMinutes) ?? null,
-      session_timeout_type: (row.session_timeout_type as SessionTimeoutType) ?? 'since_login',
-      telefoonnummer: row.telefoonnummer ?? undefined,
-      rang: row.rang ?? undefined,
-      organisatie: row.organisatie ?? undefined,
-      structuur: row.structuur ?? undefined,
-      afdeling: row.afdeling ?? undefined,
-    }
+    return mapUserRow(row as Record<string, unknown>)
   },
 
   /**
@@ -128,7 +136,12 @@ export const authService = {
    */
   async logActivity(
     userId: string | null,
-    activityType: 'login' | 'logout' | 'password_change' | 'profile_update',
+    activityType:
+      | 'login'
+      | 'logout'
+      | 'password_change'
+      | 'profile_update'
+      | 'invalidate_other_sessions',
     success: boolean,
     errorMessage?: string,
     ipAddress?: string | null,
@@ -187,28 +200,7 @@ export const authService = {
     const { data, error } = await supabase.rpc('get_all_users')
     if (error) throw new Error(error.message)
     const rows = Array.isArray(data) ? data : data ? [data] : []
-    return rows.map((row: Record<string, unknown>) => ({
-      id: row.id as string,
-      username: row.username as string,
-      email: row.email as string,
-      first_name: (row.first_name as string) ?? '',
-      last_name: (row.last_name as string) ?? '',
-      role: row.role as AppUser['role'],
-      is_active: row.is_active as boolean,
-      must_change_password: row.must_change_password as boolean,
-      last_login: row.last_login as string | undefined,
-      last_login_ip: (row.last_login_ip as string) ?? undefined,
-      last_login_user_agent: (row.last_login_user_agent as string) ?? undefined,
-      created_at: row.created_at as string,
-      updated_at: row.updated_at as string,
-      session_timeout_minutes: (row.session_timeout_minutes as SessionTimeoutMinutes) ?? null,
-      session_timeout_type: ((row as { session_timeout_type?: string }).session_timeout_type as SessionTimeoutType) ?? 'since_login',
-      telefoonnummer: (row.telefoonnummer as string) ?? undefined,
-      rang: (row.rang as string) ?? undefined,
-      organisatie: (row.organisatie as string) ?? undefined,
-      structuur: (row.structuur as string) ?? undefined,
-      afdeling: (row.afdeling as string) ?? undefined,
-    }))
+    return rows.map((row: Record<string, unknown>) => mapUserRow(row))
   },
 
   /**
@@ -222,6 +214,11 @@ export const authService = {
       p_first_name: data.first_name,
       p_last_name: data.last_name,
       p_password: data.password,
+      p_telefoonnummer: data.telefoonnummer ?? null,
+      p_rang: data.rang ?? null,
+      p_organisatie: data.organisatie ?? null,
+      p_structuur: data.structuur ?? null,
+      p_afdeling: data.afdeling ?? null,
     })
     if (error) throw new Error(error.message)
   },

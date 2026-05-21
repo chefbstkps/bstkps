@@ -180,6 +180,50 @@ export class RadioService {
     }
   }
 
+  static async getHistoryById(historyId: string): Promise<RadioHistory | null> {
+    try {
+      const response = await fetch(`${supabaseUrl}/rest/v1/radio_history?id=eq.${historyId}&select=*`, {
+        headers: {
+          'apikey': supabaseAnonKey,
+          'Authorization': `Bearer ${supabaseAnonKey}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const data = await response.json()
+      return data[0] || null
+    } catch (error) {
+      console.error('Failed to fetch radio history by id:', error)
+      throw error
+    }
+  }
+
+  static async getAllHistory(): Promise<RadioHistory[]> {
+    try {
+      const response = await fetch(`${supabaseUrl}/rest/v1/radio_history?select=*&order=timestamp.desc`, {
+        headers: {
+          'apikey': supabaseAnonKey,
+          'Authorization': `Bearer ${supabaseAnonKey}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const data = await response.json()
+      return data || []
+    } catch (error) {
+      console.error('Failed to fetch all radio history:', error)
+      throw error
+    }
+  }
+
   static async getHistory(radioId: string): Promise<RadioHistory[]> {
     try {
       const response = await fetch(`${supabaseUrl}/rest/v1/radio_history?radio_id=eq.${radioId}&select=*&order=timestamp.desc`, {

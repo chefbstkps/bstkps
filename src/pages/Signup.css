@@ -9,7 +9,7 @@
 
 .signup-card {
   width: 100%;
-  max-width: 420px;
+  max-width: 460px;
   background-color: var(--color-bg-secondary);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
@@ -83,6 +83,28 @@
   outline: none;
   border-color: var(--color-primary);
   box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.25);
+}
+
+.signup-form__select {
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.signup-form__select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.25);
+}
+
+.signup-form__select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .signup-form__row {
@@ -164,6 +186,56 @@
 
 .signup-form__submit-text {
   flex-shrink: 0;
+}
+
+.signup-form__step--hidden {
+  display: none;
+}
+
+.signup-form__step-actions {
+  margin-top: var(--spacing-md);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.signup-form__step-actions--two {
+  justify-content: space-between;
+  gap: var(--spacing-md);
+}
+
+.signup-form__btn-next,
+.signup-form__btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md) var(--spacing-lg);
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.signup-form__btn-next {
+  background-color: var(--color-primary);
+  color: #fff;
+  border: none;
+}
+
+.signup-form__btn-next:hover {
+  background-color: var(--color-primary-hover);
+}
+
+.signup-form__btn-back {
+  background-color: transparent;
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+}
+
+.signup-form__btn-back:hover {
+  background-color: var(--color-bg-hover);
+  color: var(--color-text-primary);
+  border-color: var(--color-border-light);
 }
 
 .signup-form__login-link {

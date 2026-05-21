@@ -2,13 +2,13 @@ import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { authService } from '../services/authService'
 import type { UpdateUserData, ChangePasswordData } from '../types'
-import { User, Lock, Eye, EyeOff } from 'lucide-react'
+import { User, Lock, Eye, EyeOff, Monitor } from 'lucide-react'
 import './Profile.css'
 
-type Tab = 'profile' | 'password'
+type Tab = 'profile' | 'password' | 'sessions'
 
 export default function Profile() {
-  const { user, refreshUser } = useAuth()
+  const { user, refreshUser, signOutOtherDevices } = useAuth()
   const [activeTab, setActiveTab] = useState<Tab>('profile')
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
@@ -25,6 +25,7 @@ export default function Profile() {
   const [showCurrent, setShowCurrent] = useState(false)
   const [showNew, setShowNew] = useState(false)
   const [passwordSaving, setPasswordSaving] = useState(false)
+  const [sessionsSaving, setSessionsSaving] = useState(false)
 
   if (!user) return null
 
@@ -76,6 +77,29 @@ export default function Profile() {
     }
   }
 
+  const handleSignOutOtherDevices = async () => {
+    const ok = window.confirm(
+      'Alle andere browsers en apparaten worden uitgelogd. Je blijft op dit apparaat ingelogd. Doorgaan?'
+    )
+    if (!ok) return
+    setMessage(null)
+    setSessionsSaving(true)
+    try {
+      await signOutOtherDevices()
+      setMessage({
+        type: 'success',
+        text: 'Andere sessies zijn beëindigd. Je bent op dit apparaat nog ingelogd.',
+      })
+    } catch (err) {
+      setMessage({
+        type: 'error',
+        text: err instanceof Error ? err.message : 'Uitloggen op andere apparaten mislukt',
+      })
+    } finally {
+      setSessionsSaving(false)
+    }
+  }
+
   const formatDate = (s: string | undefined) => {
     if (!s) return '—'
     try {
@@ -108,6 +132,14 @@ export default function Profile() {
         >
           <Lock size={18} />
           Wachtwoord wijzigen
+        </button>
+        <button
+          type="button"
+          className={`profile-tabs__tab ${activeTab === 'sessions' ? 'profile-tabs__tab--active' : ''}`}
+          onClick={() => setActiveTab('sessions')}
+        >
+          <Monitor size={18} />
+          Sessies
         </button>
       </div>
 
@@ -186,6 +218,25 @@ export default function Profile() {
             {profileSaving ? 'Opslaan...' : 'Opslaan'}
           </button>
         </form>
+      )}
+
+      {activeTab === 'sessions' && (
+        <div className="profile-form profile-sessions">
+          <h2 className="profile-sessions__title">Actieve sessies</h2>
+          <p className="profile-sessions__text">
+            Je bent ingelogd via een sessie in deze browser. Als je op een ander apparaat bent
+            ingelogd en die sessie wilt beëindigen, log je hier alle andere browsers en apparaten
+            uit. Op dit apparaat blijf je ingelogd.
+          </p>
+          <button
+            type="button"
+            className="btn btn--secondary"
+            onClick={handleSignOutOtherDevices}
+            disabled={sessionsSaving}
+          >
+            {sessionsSaving ? 'Bezig...' : 'Uitloggen op alle andere apparaten'}
+          </button>
+        </div>
       )}
 
       {activeTab === 'password' && (

@@ -11,6 +11,7 @@ const ACTIVITY_TYPES: Array<UserActivityLogEntry['activity_type']> = [
   'logout',
   'password_change',
   'profile_update',
+  'invalidate_other_sessions',
 ]
 
 const ACTIVITY_LABELS: Record<UserActivityLogEntry['activity_type'], string> = {
@@ -18,6 +19,7 @@ const ACTIVITY_LABELS: Record<UserActivityLogEntry['activity_type'], string> = {
   logout: 'Logout',
   password_change: 'Wachtwoord gewijzigd',
   profile_update: 'Profiel bijgewerkt',
+  invalidate_other_sessions: 'Andere sessies beëindigd',
 }
 
 export default function UsersLog() {

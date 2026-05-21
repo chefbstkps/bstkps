@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react'
-import { authService } from '../services/authService'
+import { authService, isSessionStillValid } from '../services/authService'
 import type { AppUser, LoginCredentials } from '../types'
 
 const STORAGE_KEY = 'bst_user'
@@ -12,6 +12,7 @@ interface AuthContextType {
   isAuthenticated: boolean
   signIn: (credentials: LoginCredentials) => Promise<void>
   signOut: () => Promise<void>
+  signOutOtherDevices: () => Promise<void>
   refreshUser: () => Promise<void>
   isAdmin: () => boolean
   isSuperUser: () => boolean
@@ -45,6 +46,28 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [])
 
+  const getLoggedInAtMs = useCallback((): number => {
+    const raw = localStorage.getItem(LOGGED_IN_AT_KEY)
+    if (raw) return parseInt(raw, 10)
+    return 0
+  }, [])
+
+  const clearSessionAndRedirectToLogin = useCallback(() => {
+    persistUser(null)
+    window.location.href = '/login'
+  }, [persistUser])
+
+  const ensureSessionValid = useCallback(
+    (userData: AppUser): boolean => {
+      if (!isSessionStillValid(getLoggedInAtMs(), userData.sessions_invalidated_at)) {
+        clearSessionAndRedirectToLogin()
+        return false
+      }
+      return true
+    },
+    [getLoggedInAtMs, clearSessionAndRedirectToLogin]
+  )
+
   const loadUserWithPageVisibility = useCallback(async (userId: string): Promise<AppUser | null> => {
     const fresh = await authService.getCurrentUser(userId)
     if (!fresh) return null
@@ -67,6 +90,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const loggedInAt = localStorage.getItem(LOGGED_IN_AT_KEY)
       loadUserWithPageVisibility(parsed.id).then((userWithVisibility) => {
         if (userWithVisibility) {
+          if (!isSessionStillValid(
+            loggedInAt ? parseInt(loggedInAt, 10) : 0,
+            userWithVisibility.sessions_invalidated_at
+          )) {
+            localStorage.removeItem(STORAGE_KEY)
+            localStorage.removeItem(LOGGED_IN_AT_KEY)
+            localStorage.removeItem(LAST_ACTIVITY_AT_KEY)
+            setUser(null)
+            return
+          }
           setUser(userWithVisibility)
           localStorage.setItem(STORAGE_KEY, JSON.stringify(userWithVisibility))
           if (!loggedInAt) {
@@ -113,29 +146,57 @@ export function AuthProvider({ children }: AuthProviderProps) {
     persistUser(null)
   }, [user?.id, persistUser])
 
+  const signOutOtherDevices = useCallback(async () => {
+    if (!user?.id) return
+    const invalidatedAt = await authService.invalidateOtherSessions(user.id)
+    const loggedInAt = new Date(invalidatedAt).getTime()
+    const withVisibility = await loadUserWithPageVisibility(user.id)
+    if (withVisibility) {
+      persistUser(
+        { ...withVisibility, sessions_invalidated_at: invalidatedAt },
+        loggedInAt
+      )
+    }
+  }, [user?.id, persistUser, loadUserWithPageVisibility])
+
   useEffect(() => {
     if (!user?.id) return
-    const timeoutMinutes = user.session_timeout_minutes
-    if (timeoutMinutes == null) return
 
-    const timeoutType = user.session_timeout_type ?? 'since_login'
+    const checkSession = async () => {
+      const fresh = await authService.getCurrentUser(user.id)
+      if (!fresh) {
+        clearSessionAndRedirectToLogin()
+        return
+      }
+      if (!isSessionStillValid(getLoggedInAtMs(), fresh.sessions_invalidated_at)) {
+        clearSessionAndRedirectToLogin()
+        return
+      }
 
-    const checkExpiry = () => {
+      setUser((prev) =>
+        prev ? { ...prev, sessions_invalidated_at: fresh.sessions_invalidated_at } : prev
+      )
+
+      const timeoutMinutes = fresh.session_timeout_minutes
+      if (timeoutMinutes == null) return
+
+      const timeoutType = fresh.session_timeout_type ?? 'since_login'
       const refKey = timeoutType === 'inactivity' ? LAST_ACTIVITY_AT_KEY : LOGGED_IN_AT_KEY
       const refAt = localStorage.getItem(refKey)
       if (!refAt) return
       const elapsed = Date.now() - parseInt(refAt, 10)
       const limitMs = timeoutMinutes * 60 * 1000
       if (elapsed >= limitMs) {
-        persistUser(null)
-        window.location.href = '/login'
+        clearSessionAndRedirectToLogin()
       }
     }
 
-    const interval = setInterval(checkExpiry, 60_000)
-    checkExpiry()
+    const interval = setInterval(() => {
+      void checkSession()
+    }, 60_000)
+    void checkSession()
     return () => clearInterval(interval)
-  }, [user?.id, user?.session_timeout_minutes, user?.session_timeout_type, persistUser])
+  }, [user?.id, getLoggedInAtMs, clearSessionAndRedirectToLogin])
 
   // Update last activity timestamp on user interaction (for inactivity timeout)
   useEffect(() => {
@@ -154,8 +215,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const refreshUser = useCallback(async () => {
     if (!user?.id) return
     const withVisibility = await loadUserWithPageVisibility(user.id)
-    if (withVisibility) persistUser(withVisibility)
-  }, [user?.id, persistUser, loadUserWithPageVisibility])
+    if (!withVisibility) {
+      clearSessionAndRedirectToLogin()
+      return
+    }
+    if (!ensureSessionValid(withVisibility)) return
+    persistUser(withVisibility)
+  }, [user?.id, persistUser, loadUserWithPageVisibility, ensureSessionValid, clearSessionAndRedirectToLogin])
 
   const isAdmin = () => user?.role === 'admin'
   const isSuperUser = () => user?.role === 'super_user'
@@ -167,6 +233,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     isAuthenticated: !!user,
     signIn,
     signOut,
+    signOutOtherDevices,
     refreshUser,
     isAdmin,
     isSuperUser,
